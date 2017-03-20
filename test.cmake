@@ -1,8 +1,8 @@
-# Set the site name with {randomString}.vagrant to identify all vagrant builds
-set(CTEST_SITE "$ENV{buildid}.vagrant")
+# Set the site name with {randomString}.docker to identify all docker builds
+set(CTEST_SITE "$ENV{buildid}.docker")
 
 # Hardset buildname with {OS}-{Mversion}_{arch} convention
-set(CTEST_BUILD_NAME "CentOS6.4-GTM$ENV{gtmver}")
+set(CTEST_BUILD_NAME "CentOS-GTM$ENV{gtmver}")
 
 # Set build type to experimental by default
 set(dashboard_model "Experimental")

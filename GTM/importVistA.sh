@@ -26,9 +26,15 @@ fi
 echo "Copying routines"
 OLDIFS=$IFS
 IFS=$'\n'
-for routine in $(cd /usr/local/src/VistA-Source && git ls-files -- \*.m); do
-    cp /usr/local/src/VistA-Source/${routine} $basedir/r
-done
+if [ -d /usr/local/src/VistA-Source/.git ]; then
+    for routine in $(cd /usr/local/src/VistA-Source && git ls-files -- \*.m); do
+        cp /usr/local/src/VistA-Source/${routine} $basedir/r
+        done
+else
+    for routine in $(cd /usr/local/src/VistA-Source && find . -iname \*.m); do
+        cp /usr/local/src/VistA-Source/${routine} $basedir/r
+        done
+fi
 echo "Done copying routines"
 
 # Compile routines
@@ -41,9 +47,16 @@ echo "Done compiling routines"
 
 # Import globals
 echo "Importing globals"
-for global in $(cd /usr/local/src/VistA-Source && git ls-files -- \*.zwr); do
-    mupip load \"/usr/local/src/VistA-Source/${global}\" >> $basedir/log/loadGloabls.log 2>&1
-done
+if [ -d /usr/local/src/VistA-Source/.git ]; then
+    for global in $(cd /usr/local/src/VistA-Source && git ls-files -- \*.zwr); do
+        mupip load \"/usr/local/src/VistA-Source/${global}\" >> $basedir/log/loadGloabls.log 2>&1
+        done
+else
+    for global in $(cd /usr/local/src/VistA-Source && find . -iname \*.zwr); do
+        mupip load \"/usr/local/src/VistA-Source/${global}\" >> $basedir/log/loadGloabls.log 2>&1
+        done
+fi
+
 echo "Done importing globals"
 
 # reset IFS

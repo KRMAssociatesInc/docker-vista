@@ -57,8 +57,8 @@ Y
 EOF"
     
     # Wait for TaskMan to stop
-    echo "Waiting for TaskMan to stop (30 sec)"
-    sleep 30
+    echo "Waiting for TaskMan to stop (2 sec)"
+    sleep 2
 
     # Look for M processes and terminate them nicely
     processes=$(pgrep mumps)

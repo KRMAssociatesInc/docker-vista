@@ -38,16 +38,20 @@ usage()
 
     OPTIONS:
       -h    Show this message
+      -f    Skip setting firewall rules
       -i    Instance name
 EOF
 }
 
-while getopts ":hi:" option
+while getopts ":hfi:" option
 do
     case $option in
         h)
             usage
             exit 1
+            ;;
+        f)
+            firewall=false
             ;;
         i)
             instance=$(echo $OPTARG |tr '[:upper:]' '[:lower:]')
@@ -55,10 +59,13 @@ do
     esac
 done
 
-if [[ -z $instance ]]
-then
+if [[ -z $instance ]]; then
     usage
     exit 1
+fi
+
+if [[ -z $firewall ]]; then
+    firewall=true
 fi
 
 echo "Creating $instance..."
@@ -103,6 +110,7 @@ basedir=/home/$instance
 # $instance user is a programmer user
 # $instance group is for permissions to other users
 # $instance group is auto created by adduser script
+echo "Running useradd"
 useradd -c "$instance instance owner" -m -U $instance -s /bin/bash
 useradd -c "Tied user account for $instance" -M -N -g $instance -s /home/$instance/bin/tied.sh -d /home/$instance ${instance}tied
 useradd -c "Programmer user account for $instance" -M -N -g $instance -s /home/$instance/bin/prog.sh -d /home/$instance ${instance}prog
@@ -146,7 +154,7 @@ su $instance -c "ln -s $gtm_dist $basedir/lib/gtm"
 
 # Create profile for instance
 # Required GT.M variables
-echo "export gtm_dist=$basedir/lib/gtm"         >> $basedir/etc/env
+echo "export gtm_dist=$basedir/lib/gtm"         > $basedir/etc/env
 echo "export gtm_log=$basedir/log"              >> $basedir/etc/env
 echo "export gtm_tmp=$basedir/tmp"              >> $basedir/etc/env
 echo "export gtm_prompt=\"${instance^^}>\""     >> $basedir/etc/env
@@ -176,7 +184,7 @@ else
 fi
 
 # 64bit GT.M can use a shared library instead of $gtm_dist
-if [ $gtm_arch == "x86_64" ]; then
+if [[ $gtm_arch == "x86_64" && -e $basedir/lib/gtm/libgtmutil.so ]]; then
     echo "export gtmroutines=\"$gtmroutines $basedir/lib/gtm/libgtmutil.so $basedir/lib/gtm\"" >> $basedir/etc/env
 else
     echo "export gtmroutines=\"$gtmroutines $basedir/lib/gtm\"" >> $basedir/etc/env
@@ -184,7 +192,7 @@ fi
 
 # prog.sh - priviliged (programmer) user access
 # Allow access to ZSY
-echo "#!/bin/bash"                              >> $basedir/bin/prog.sh
+echo "#!/bin/bash"                              > $basedir/bin/prog.sh
 echo "source $basedir/etc/env"                  >> $basedir/bin/prog.sh
 echo "export SHELL=/bin/bash"                   >> $basedir/bin/prog.sh
 echo "#These exist for compatibility reasons"   >> $basedir/bin/prog.sh
@@ -202,7 +210,7 @@ chmod +x $basedir/bin/prog.sh
 # tied.sh - unpriviliged user access
 # $instance is their shell - no access to ZSY
 # need to set users with $basedir/bin/tied.sh as their shell
-echo "#!/bin/bash"                              >> $basedir/bin/tied.sh
+echo "#!/bin/bash"                              > $basedir/bin/tied.sh
 echo "source $basedir/etc/env"                  >> $basedir/bin/tied.sh
 echo "export SHELL=/bin/false"                  >> $basedir/bin/tied.sh
 echo "export gtm_nocenable=true"                >> $basedir/bin/tied.sh
@@ -212,9 +220,32 @@ echo "exec \$gtm_dist/mumps -run ^ZU"           >> $basedir/bin/tied.sh
 chown $instance:$instance $basedir/bin/tied.sh
 chmod +x $basedir/bin/tied.sh
 
+# create startup script used by docker
+echo "#!/bin/bash"                                      > $basedir/bin/start.sh
+echo 'trap "/etc/init.d/'${instance}'vista stop" SIGTERM' >> $basedir/bin/start.sh
+echo 'echo Resetting box-vol pair'                      >> $basedir/bin/start.sh
+echo "su $instance -c \"source $basedir/etc/env && cd $basedir/tmp && mumps -run %XCMD 's IEN=\\\$O(^%ZIS(14.7,0)) s (boxvol,oldboxvol)=\\\$P(^%ZIS(14.7,IEN,0),\\\"^\\\",1) s \\\$P(boxvol,\\\":\\\",2)=\\\"\$(hostname)\\\" s \\\$P(^%ZIS(14.7,IEN,0),\\\"^\\\",1)=boxvol k ^%ZIS(14.7,\\\"B\\\",oldboxvol) s ^%ZIS(14.7,\\\"B\\\",boxvol,IEN)=\\\"\\\"'\""                      >> $basedir/bin/start.sh
+echo 'echo "Starting xinetd"'                           >> $basedir/bin/start.sh
+echo "/usr/sbin/xinetd"                                 >> $basedir/bin/start.sh
+echo 'echo "Starting sshd"'                             >> $basedir/bin/start.sh
+echo "/usr/sbin/sshd"                                   >> $basedir/bin/start.sh
+echo 'echo "Starting vista processes "'                 >> $basedir/bin/start.sh
+echo "/etc/init.d/${instance}vista start"               >> $basedir/bin/start.sh
+echo "chmod ug+rw $basedir/tmp/*"                       >> $basedir/bin/start.sh
+echo '# Create a fifo so that bash can read from it to' >> $basedir/bin/start.sh
+echo '# catch signals from docker'                      >> $basedir/bin/start.sh
+echo 'rm -f ~/fifo'                                     >> $basedir/bin/start.sh
+echo 'mkfifo ~/fifo || exit'                            >> $basedir/bin/start.sh
+echo 'chmod 400 ~/fifo'                                 >> $basedir/bin/start.sh
+echo 'read < ~/fifo'                                    >> $basedir/bin/start.sh
+
+# Ensure correct permissions for start.sh
+chown $instance:$instance $basedir/bin/start.sh
+chmod +x $basedir/bin/start.sh
+
 # Create Global mapping
 # Thanks to Sam Habiel, Gus Landis, and others for the inital values
-echo "c -s DEFAULT    -ACCESS_METHOD=BG -BLOCK_SIZE=4096 -ALLOCATION=200000 -EXTENSION_COUNT=1024 -GLOBAL_BUFFER_COUNT=4096 -LOCK_SPACE=400 -FILE=$basedir/g/$instance.dat" >> $basedir/etc/db.gde
+echo "c -s DEFAULT    -ACCESS_METHOD=BG -BLOCK_SIZE=4096 -ALLOCATION=200000 -EXTENSION_COUNT=1024 -GLOBAL_BUFFER_COUNT=4096 -LOCK_SPACE=400 -FILE=$basedir/g/$instance.dat" > $basedir/etc/db.gde
 echo "a -s TEMP       -ACCESS_METHOD=MM -BLOCK_SIZE=4096 -ALLOCATION=10000 -EXTENSION_COUNT=1024 -GLOBAL_BUFFER_COUNT=4096 -LOCK_SPACE=400 -FILE=$basedir/g/temp.dat" >> $basedir/etc/db.gde
 echo "c -r DEFAULT    -RECORD_SIZE=16368 -KEY_SIZE=1019 -JOURNAL=(BEFORE_IMAGE,FILE_NAME=\"$basedir/j/$instance.mjl\") -DYNAMIC_SEGMENT=DEFAULT" >> $basedir/etc/db.gde
 echo "a -r TEMP       -RECORD_SIZE=16368 -KEY_SIZE=1019 -NOJOURNAL -DYNAMIC_SEGMENT=TEMP"   >> $basedir/etc/db.gde
@@ -242,10 +273,12 @@ chown -R $instance:$instance $basedir
 chmod -R g+rw $basedir
 
 # Add firewall rules
-if [[ $RHEL || -z $ubuntu ]]; then
-    sudo iptables -I INPUT 1 -p tcp --dport 9430 -j ACCEPT # RPC Broker
-    sudo iptables -I INPUT 1 -p tcp --dport 8001 -j ACCEPT # VistALink
-    sudo service iptables save
+if $firewall; then
+    if [[ $RHEL || -z $ubuntu ]]; then
+        sudo iptables -I INPUT 1 -p tcp --dport 9430 -j ACCEPT # RPC Broker
+        sudo iptables -I INPUT 1 -p tcp --dport 8001 -j ACCEPT # VistALink
+        sudo service iptables save
+    fi
 fi
 
 echo "VistA instance $instance created!"
