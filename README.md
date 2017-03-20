@@ -3,9 +3,9 @@
 ## Requirements
 This has only been tested using:
 
-Docker for Mac
-Docker on Linux (Thanks: George Lilly)
-Docker Toolkit on Windows 7 (Thanks: Sam Habiel)
+* Docker for Mac
+* Docker on Linux (Thanks: George Lilly)
+* Docker Toolkit on Windows 7 (Thanks: Sam Habiel)
 
 ## Pre-requisites
 A working [Docker](https://www.docker.com/community-edition#/download) installation on the platform of choice.
