@@ -11,11 +11,14 @@ Docker Toolkit on Windows 7 (Thanks: Sam Habiel)
 A working [Docker](https://www.docker.com/community-edition#/download) installation on the platform of choice.
 
 ## Build Steps
-    Build the docker image
-    ```docker build -t osehra .```
-    Run the created image
-    ```docker run -p 9430:9430 -p 8001:8001 -p 2222:22 -d -P --name=osehravista osehra```
-
+1) Build the docker image
+    ```
+    docker build -t osehra .
+    ```
+2) Run the created image
+    ```
+    docker run -p 9430:9430 -p 8001:8001 -p 2222:22 -d -P --name=osehravista osehra
+    ```
 ## Roll-and-Scroll Access
 
 1) Tied VistA user:
