@@ -10,6 +10,9 @@ This has only been tested using:
 ## Pre-requisites
 A working [Docker](https://www.docker.com/community-edition#/download) installation on the platform of choice.
 
+## Pre-built images
+Pre-built images using this repository are available on [docker hub](https://hub.docker.com/r/krmassociates/)
+
 ## Build Steps
 1) Build the docker image
     ```
