@@ -42,3 +42,19 @@ password: prog
 
 password: docker
 
+## Tests
+Deployment tests are written using [bats](https://github.com/sstephenson/bats)
+The tests make sure that deployment directories, scripts, RPC Broker, VistALink
+are all working and how they should be.
+
+There are two special tests:
+ * fifo
+   The fifo test is for docker containers and assumes that the tests are ran as root
+   (currently) as that is who owns the fifo
+ * VistALink
+   This test installs java, retrieves a zip file of a github repo and makes a VistALink
+   connection. This test does take a few seconds to complete and modifies the installed
+   packages of the system. It also needs to have 2 environemnt variables defined: accessCode
+   and verifyCode. These should be a valid access/verify code of a system manager user
+   that has access to VistALink
+

@@ -84,3 +84,31 @@ EOF
     echo "output :"$output
     [ $(expr "$output" : "1^accept.*") -ne 0 ]
 }
+
+@test "VistALink connection works" {
+    run yum -y install java
+    [ $(expr "$output" : ".*[I,i]nstalled.*") -ne 0 ]
+    run java -version
+    [ $(expr "$output" : ".*1.8.*") -ne 0 ]
+    pushd /tmp
+    curl -LO https://github.com/shabiel/vistalink-tester-for-linux/archive/master.zip
+    unzip master.zip
+    rm -f master.zip
+    export CLASSPATH=./geronimo-j2ee-connector_1.5_spec-1.0.1.jar
+    export CLASSPATH=${CLASSPATH}:./log4j-1.2.13.jar
+    export CLASSPATH=${CLASSPATH}:./vljConnector-1.6.0.028.jar
+    export CLASSPATH=${CLASSPATH}:./vljFoundationsLib-1.6.0.028.jar
+    export CLASSPATH=${CLASSPATH}:./vljSecurity-1.6.0.028.jar
+    export CLASSPATH=${CLASSPATH}:./vljSamples-1.6.0.028.jar
+    cd vistalink-tester-for-linux-master/samples-J2SE/
+    echo 'LocalServer {' > jaas1.config
+    echo '    gov.va.med.vistalink.security.VistaLoginModule requisite' >> jaas1.config
+    echo '    gov.va.med.vistalink.security.ServerAddressKey="127.0.0.1"' >> jaas1.config
+    echo '    gov.va.med.vistalink.security.ServerPortKey="8001";' >> jaas1.config
+    echo '};' >> jaas1.config
+    output=$(java -Djava.security.auth.login.config="./jaas1.config" -cp $CLASSPATH gov.va.med.vistalink.samples.VistaLinkRpcConsole -s LocalServer -a ${accessCode} -v ${verifyCode})
+    echo "output: "$output
+    cd ../..
+    rm -rf vistalink-tester-for-linux-master
+    [ $(expr "$output" : ".*Successful.*Gettysburg.*") -ne 0 ]
+}
