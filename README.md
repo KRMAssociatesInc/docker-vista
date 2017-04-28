@@ -10,9 +10,22 @@ This has only been tested using:
 ## Pre-requisites
 A working [Docker](https://www.docker.com/community-edition#/download) installation on the platform of choice.
 
+## Note
+You cannot use docker exec -it osehravista bash to get access to the mumps prompt. This is likely due to how docker permission schemes for shared memory access works. Instead always gain access via the ssh commands below
+
 ## Pre-built images
 Pre-built images using this repository are available on [docker hub](https://hub.docker.com/r/krmassociates/)
 
+### Running a Pre-built image
+1) Pull the image
+    ```
+    docker pull krmassociates/osehravista # subsitute worldvista or vxvista if you want one of those instead
+    ```
+2) Run the image
+    ```
+    docker run -p 9430:9430 -p 8001:8001 -p 2222:22 -d -P --name=osehravista krmassociates/osehravista # subsitute worldvista or vxvista if you want one of those instead
+    ```
+    
 ## Build Steps
 1) Build the docker image
     ```
@@ -26,13 +39,13 @@ Pre-built images using this repository are available on [docker hub](https://hub
 
 1) Tied VistA user:
 
-    ssh osehratied@localhost -p 2222
+    ssh osehratied@localhost -p 2222 # subsitute worldvistatied or vxvistatied if you used one of those images
 
 password tied
 
 2) Programmer VistA user:
 
-    ssh osehraprog@localhost -p 2222
+    ssh osehraprog@localhost -p 2222 # subsitute worldvistaprog or vxvistaprog if you used one of those images
 
 password: prog
 
@@ -41,6 +54,26 @@ password: prog
     ssh root@localhost -p 2222
 
 password: docker
+
+## VistA Access/Verify codes
+
+OSEHRA VistA:
+
+Regular doctor:
+Access Code: FakeDoc1
+Verify Code: 1Doc!@#$
+
+System Manager:
+Access Code: SM1234
+Verify Code: SM1234!!!
+
+WorldVistA:
+
+Displayed in the VistA greeting message
+
+vxVistA:
+
+Displayed in the VistA greeting message
 
 ## Tests
 Deployment tests are written using [bats](https://github.com/sstephenson/bats)
