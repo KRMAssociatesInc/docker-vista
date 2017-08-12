@@ -1,0 +1,13 @@
+service vista-bmxnet
+{
+  port = 9101
+  socket_type = stream
+  protocol = tcp
+  type = UNLISTED
+  user = foia
+  server = /home/foia/bin/bmxnet.sh
+  wait = no
+  disable = no
+  per_source = UNLIMITED
+  instances = UNLIMITED
+}

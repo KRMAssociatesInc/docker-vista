@@ -18,8 +18,8 @@ WORKDIR /opt/vista
 ADD . /opt/vista/
 
 # OSEHRA VistA
-RUN ./autoInstaller.sh -g -b && \
-	rm -rf /home/osehra/Dashboard
+#RUN ./autoInstaller.sh -g -b && \
+#	rm -rf /home/osehra/Dashboard
 
 # WorldVistA
 #RUN ./autoInstaller.sh -g -b -s -i worldvista -a https://github.com/glilly/wvehr2-dewdrop/archive/master.zip && \
@@ -29,8 +29,12 @@ RUN ./autoInstaller.sh -g -b && \
 #RUN ./autoInstaller.sh -g -b -s -i vxvista -a https://github.com/OSEHRA/vxVistA-M/archive/master.zip && \
 #	rm -rf /usr/local/src/VistA-Source
 
-EXPOSE 22 8001 9430
+# RPMS
+RUN ./autoInstaller.sh -g -b -s -i rpms -a https://github.com/ChristopherEdwards/FOIA-RPMS/archive/foia-2017-02-22-gtm.zip && \
+	rm -rf /usr/local/src/VistA-Source
+EXPOSE 22 8001 9430 9101 9100
 
-ENTRYPOINT /home/osehra/bin/start.sh
+ENTRYPOINT /home/rpms/bin/start.sh
+#ENTRYPOINT /home/osehra/bin/start.sh
 #ENTRYPOINT /home/worldvista/bin/start.sh
 #ENTRYPOINT /home/vxvista/bin/start.sh
