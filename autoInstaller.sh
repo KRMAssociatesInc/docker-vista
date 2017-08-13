@@ -49,7 +49,7 @@ usage()
       -b    Skip bootstrapping system (used for docker)
       -c    Path to Caché installer
       -d    Create development directories (s & p) (GT.M only)
-      -e    Install EWD.js (assumes development directories)
+      -e    Install QEWD(assumes development directories)
       -g    Use GT.M
       -i    Instance name
       -p    Post install hook (path to script)
@@ -147,7 +147,7 @@ fi
 echo "Using $repoPath for routines and globals"
 echo "Create development directories: $developmentDirectories"
 echo "Installing an instance named: $instance"
-echo "Installing EWD.js: $installEWD"
+echo "Installing QEWD: $installEWD"
 echo "Post install hook: $postInstall"
 echo "Skip Testing: $skipTests"
 echo "Skip bootstrap: $bootstrap"
@@ -364,10 +364,10 @@ if $developmentDirectories; then
     perl -pi -e 's#export gtmroutines=\"#export gtmroutines=\"\$basedir/p/\$gtmver\(\$basedir/p\) \$basedir/s/\$gtmver\(\$basedir/s\) #' $basedir/etc/env
 fi
 
-# Install EWD.js
+# Install QEWD
 if $installEWD; then
     cd $scriptdir/EWD
-    ./ewdjs.sh
+    ./ewdjs.sh -f
     cd $basedir
 fi
 

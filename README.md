@@ -22,8 +22,13 @@ Pre-built images using this repository are available on [docker hub](https://hub
     docker pull krmassociates/osehravista # subsitute worldvista or vxvista if you want one of those instead
     ```
 2) Run the image
+  Non QEWD enabled images
     ```
     docker run -p 9430:9430 -p 8001:8001 -p 2222:22 -d -P --name=osehravista krmassociates/osehravista # subsitute worldvista or vxvista if you want one of those instead
+    ```
+  QEWD enabled images
+    ```
+    docker run -p 9430:9430 -p 8001:8001 -p 2222:22 -p 8080:8080 -d -P --name=osehravista krmassociates/osehravista-qewd
     ```
     
 ## Build Steps
@@ -74,6 +79,11 @@ Displayed in the VistA greeting message
 vxVistA:
 
 Displayed in the VistA greeting message
+
+## QEWD passwords
+
+Monitor:
+keepThisSecret!
 
 ## Tests
 Deployment tests are written using [bats](https://github.com/sstephenson/bats)

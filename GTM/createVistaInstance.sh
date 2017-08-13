@@ -229,8 +229,10 @@ echo 'echo "Starting xinetd"'                           >> $basedir/bin/start.sh
 echo "/usr/sbin/xinetd"                                 >> $basedir/bin/start.sh
 echo 'echo "Starting sshd"'                             >> $basedir/bin/start.sh
 echo "/usr/sbin/sshd"                                   >> $basedir/bin/start.sh
-echo 'echo "Starting vista processes "'                 >> $basedir/bin/start.sh
+echo 'echo "Starting vista processes"'                  >> $basedir/bin/start.sh
 echo "/etc/init.d/${instance}vista start"               >> $basedir/bin/start.sh
+echo 'echo "Starting QEWD process"'                     >> $basedir/bin/start.sh
+echo "/etc/init.d/${instance}vista-qewd start"          >> $basedir/bin/start.sh
 echo "chmod ug+rw $basedir/tmp/*"                       >> $basedir/bin/start.sh
 echo '# Create a fifo so that bash can read from it to' >> $basedir/bin/start.sh
 echo '# catch signals from docker'                      >> $basedir/bin/start.sh

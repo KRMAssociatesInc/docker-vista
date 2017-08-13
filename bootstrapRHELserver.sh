@@ -25,4 +25,4 @@ fi
 yum update -y > /dev/null
 
 # Install baseline packages
-yum install -y git xinetd perl wget curl python openssh-server expect man mysql mysql-server python-argparse sshpass > /dev/null
+yum install -y gcc-c++ git xinetd perl wget curl python openssh-server expect man mysql mysql-server python-argparse sshpass > /dev/null

@@ -2,7 +2,8 @@ FROM centos
 
 RUN echo "multilib_policy=best" >> /etc/yum.conf
 RUN yum  -y update && \
-	yum install -y git xinetd perl curl python openssh-server openssh-clients expect man python-argparse sshpass wget make cmake dos2unix which unzip || true && \
+	yum install -y gcc-c++ git xinetd perl curl python openssh-server openssh-clients expect man python-argparse sshpass wget make cmake dos2unix which unzip || true && \
+	yum install -y http://libslack.org/daemon/download/daemon-0.6.4-1.i686.rpm > /dev/null && \
 	package-cleanup --cleandupes && \
 	yum  -y clean all
 
@@ -18,7 +19,7 @@ WORKDIR /opt/vista
 ADD . /opt/vista/
 
 # OSEHRA VistA
-RUN ./autoInstaller.sh -g -b && \
+RUN ./autoInstaller.sh -g -b -e && \
 	rm -rf /home/osehra/Dashboard
 
 # WorldVistA
@@ -29,7 +30,7 @@ RUN ./autoInstaller.sh -g -b && \
 #RUN ./autoInstaller.sh -g -b -s -i vxvista -a https://github.com/OSEHRA/vxVistA-M/archive/master.zip && \
 #	rm -rf /usr/local/src/VistA-Source
 
-EXPOSE 22 8001 9430
+EXPOSE 22 8001 9430 8080
 
 ENTRYPOINT /home/osehra/bin/start.sh
 #ENTRYPOINT /home/worldvista/bin/start.sh
