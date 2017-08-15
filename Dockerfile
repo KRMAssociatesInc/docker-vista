@@ -19,7 +19,7 @@ WORKDIR /opt/vista
 ADD . /opt/vista/
 
 # OSEHRA VistA
-RUN ./autoInstaller.sh -g -b -e && \
+RUN ./autoInstaller.sh -g -b -e -p && \
 	rm -rf /home/osehra/Dashboard
 
 # WorldVistA
