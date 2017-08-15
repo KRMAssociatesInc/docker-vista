@@ -15,7 +15,7 @@
 # limitations under the License.
 #---------------------------------------------------------------------------
 
-# init script for qewd
+# init script for QEWD
 
 # Debian LSB info
 ### BEGIN INIT INFO
@@ -40,16 +40,16 @@ fi
 source /home/foia/etc/env
 export PATH=$PATH:/usr/local/bin
 
-# Start EWD.js background tasks
+# Start QEWD background tasks
 start() {
-    # Start EWD.js
+    # Start QEWD
     echo "Starting QEWD"
-    su $instance -c "source $basedir/.nvm/nvm.sh && source $basedir/etc/env && nvm use $nodever && daemon --name qewd-${instance} -O $basedir/log/qewd.log -E $basedir/log/qewdErr.log --chdir $basedir/qewd node qewd"
+    su $instance -c "source $basedir/.nvm/nvm.sh && source $basedir/etc/env && nvm use $nodever && export NODE_ENV=production && daemon --name qewd-${instance} -O $basedir/log/qewd.log -E $basedir/log/qewdErr.log --chdir $basedir/qewd node qewd"
 }
 
 # Stop EWD.js background tasks
 stop() {
-    # Stop EWD.js
+    # Stop QEWD
     echo "Stopping QEWD"
     su $instance -c "source $basedir/.nvm/nvm.sh && source $basedir/etc/env && nvm use $nodever && daemon --name qewd-${instance} --stop"
 }

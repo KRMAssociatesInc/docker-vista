@@ -61,8 +61,6 @@ do
     esac
 done
 
-echo "nodever $nodever"
-
 # Set defaults for options
 if [ -z $nodever ]; then
     nodever="6"
@@ -71,6 +69,8 @@ fi
 if [[ -z $firewall ]]; then
     firewall=true
 fi
+
+echo "nodever $nodever"
 
 # Set the node version
 shortnodever=$(echo $nodever | cut -d'.' -f 2)

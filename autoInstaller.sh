@@ -49,7 +49,8 @@ usage()
       -b    Skip bootstrapping system (used for docker)
       -c    Path to Caché installer
       -d    Create development directories (s & p) (GT.M only)
-      -e    Install QEWD(assumes development directories)
+      -e    Install QEWD (assumes development directories)
+      -p    Install Panorama (assumes development directories and QEWD)
       -g    Use GT.M
       -i    Instance name
       -p    Post install hook (path to script)
@@ -58,7 +59,7 @@ usage()
 EOF
 }
 
-while getopts ":ha:c:bedgi:p:sr:" option
+while getopts ":ha:c:bepdgi:p:sr:" option
 do
     case $option in
         h)
@@ -80,6 +81,11 @@ do
         e)
             installEWD=true
             developmentDirectories=true
+            ;;
+        p)
+            installEWD=true
+            developmentDirectories=true
+            installPanorama=true
             ;;
         g)
             installgtm=true
@@ -117,6 +123,10 @@ if [[ -z $installEWD ]]; then
     installEWD=false
 fi
 
+if [[ -z $installPanorama ]]; then
+    installPanorama=false
+fi
+
 if [[ -z $installgtm ]]; then
     installgtm=false
 fi
@@ -148,6 +158,7 @@ echo "Using $repoPath for routines and globals"
 echo "Create development directories: $developmentDirectories"
 echo "Installing an instance named: $instance"
 echo "Installing QEWD: $installEWD"
+echo "Installing Panorama: $installPanorama"
 echo "Post install hook: $postInstall"
 echo "Skip Testing: $skipTests"
 echo "Skip bootstrap: $bootstrap"
@@ -368,6 +379,13 @@ fi
 if $installEWD; then
     cd $scriptdir/EWD
     ./ewdjs.sh -f
+    cd $basedir
+fi
+
+# Install Panorama
+if $installPanorama; then
+    cd $scriptdir/EWD
+    ./panorama.sh -f
     cd $basedir
 fi
 
