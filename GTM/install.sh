@@ -38,16 +38,18 @@ usage()
 
     DEFAULTS:
       GT.M Version = V6.2-000
+      YottaDB Version = r1.0
 
     OPTIONS:
       -h    Show this message
+      -v    GT.M/YottaDB version to install
+      -y    Install YottaDB instead of GT.M
       -s    Skip setting shared memory parameters
-      -v    GT.M version to install
 
 EOF
 }
 
-while getopts ":hsv:" option
+while getopts "hsyv:" option
 do
     case $option in
         h)
@@ -60,12 +62,18 @@ do
         v)
             gtm_ver=$OPTARG
             ;;
+        y)
+            installYottaDB="true"
     esac
 done
 
 # Set defaults for options
-if [ -z $gtm_ver ]; then
-    gtm_ver=V6.2-000
+if [ -z $gtm_ver ] && [ -z $installYottaDB ]; then
+    gtm_ver="V6.2-000"
+fi
+
+if [ "$installYottaDB" = true ]; then
+    gtm_ver="r1.10"
 fi
 
 if [ -z $sharedmem ]; then
@@ -74,21 +82,32 @@ fi
 
 # Download gtminstall script from SourceForge
 echo "Downloading gtminstall"
-curl -s --remote-name -L http://downloads.sourceforge.net/project/fis-gtm/GT.M%20Installer/v0.13/gtminstall
+curl -s -L https://raw.githubusercontent.com/YottaDB/YottaDB/master/sr_unix/ydbinstall.sh -o gtminstall
+
+# Verify hash as we are going to make it executable
+sha1sum -c --status gtminstall_SHA1
+if [ $? -gt 0 ]; then
+    echo "Something went wrong downloading gtminstall"
+    exit $?
+fi
 
 # Get kernel.shmmax to determine if we can use 32k strings
+# ${#...} is to compare lengths of strings before trying to use them as numbers
+# Ubuntu 16.04 box seems to have a shared memory of 18446744073692774399!!!
+# Bash just starts crying...
 if $sharedmem; then
     shmmax=$(sysctl -n kernel.shmmax)
+    shmmin=67108864
 
-    if [ $shmmax -ge 67108864 ]; then
+    if [ ${#shmmax} -ge ${#shmmin} ] || [ $shmmax -ge $shmmin ]; then
         echo "Current shared memory maximum is equal to or greater than 64MB"
         echo "Current shmmax is: " $shmmax
     else
         echo "Current shared memory maximum is less than 64MB"
         echo "Current shmmax is: " $shmmax
         echo "Setting shared memory maximum to 64MB"
-        echo "kernel.shmmax = 67108864" >> /etc/sysctl.conf
-        sysctl -w kernel.shmmax=67108864
+        echo "kernel.shmmax = $shmmin" >> /etc/sysctl.conf
+        sysctl -w kernel.shmmax=$shmmin
     fi
 fi
 
@@ -108,7 +127,11 @@ fi
 # Accept most defaults for gtminstall
 # --ucaseonly-utils - override default to install only uppercase utilities
 #                     this follows VistA convention of uppercase only routines
-./gtminstall --ucaseonly-utils --installdir /opt/lsb-gtm/"$gtm_ver"_"$gtm_arch" $gtm_ver
+if [ "$installYottaDB" = "true" ] ; then
+    ./gtminstall --ucaseonly-utils --installdir /opt/yottadb/"$gtm_ver"_"$gtm_arch" $gtm_ver
+else
+    ./gtminstall --gtm --ucaseonly-utils --installdir /opt/lsb-gtm/"$gtm_ver"_"$gtm_arch" $gtm_ver
+fi
 # Remove installgtm script as it is unnecessary
 rm ./gtminstall
 
@@ -120,7 +143,16 @@ rm ./gtminstall
 if [[ $RHEL || -z $ubuntu ]]; then
     echo "/usr/local/lib" >> /etc/ld.so.conf
 fi
-ln -s /opt/lsb-gtm/"$gtm_ver"_"$gtm_arch"/libgtmshr.so /usr/local/lib
-ln -s /opt/lsb-gtm/"$gtm_ver"_"$gtm_arch"/libgtmutil.so /usr/local/lib
+
+rm -f /usr/local/lib/libgtmshr.so
+if [ "$installYottaDB" = "true" ] ; then
+    ln -s /opt/yottadb/"$gtm_ver"_"$gtm_arch"/libgtmshr.so /usr/local/lib
+else
+    ln -s /opt/lsb-gtm/"$gtm_ver"_"$gtm_arch"/libgtmshr.so /usr/local/lib
+fi
 ldconfig
-echo "Done installing GT.M"
+if [ "$installYottaDB" = "true" ] ; then
+    echo "Done installing YottaDB"
+else
+    echo "Done installing GT.M"
+fi

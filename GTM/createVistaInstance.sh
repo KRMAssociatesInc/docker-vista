@@ -18,6 +18,7 @@
 # Create directories for instance Routines, Objects, Globals, Journals,
 # Temp Files
 # This utility requires root privliges
+#set -x
 
 # Make sure we are root
 if [[ $EUID -ne 0 ]]; then
@@ -40,10 +41,11 @@ usage()
       -h    Show this message
       -f    Skip setting firewall rules
       -i    Instance name
+      -y    Use YottaDB
 EOF
 }
 
-while getopts ":hfi:" option
+while getopts ":hfi:y" option
 do
     case $option in
         h)
@@ -56,6 +58,9 @@ do
         i)
             instance=$(echo $OPTARG |tr '[:upper:]' '[:lower:]')
             ;;
+        y)
+            installYottaDB=true
+            ;;
     esac
 done
 
@@ -66,6 +71,10 @@ fi
 
 if [[ -z $firewall ]]; then
     firewall=true
+fi
+
+if [ -z $installYottaDB ]; then
+    installYottaDB=false
 fi
 
 echo "Creating $instance..."
@@ -90,16 +99,23 @@ fi
 # list directory contents (1 per line) | count lines | strip leading and
 #                                                      trailing whitespace
 
-gtm_dirs=$(ls -1 /opt/lsb-gtm/ | wc -l | sed 's/^[ \t]*//;s/[ \t]*$//')
+if $installYottaDB; then
+    checkDir="/opt/yottadb/"
+else
+    checkDir="/opt/lsb-gtm/"
+fi
+
+gtm_dirs=$(ls -1 $checkDir | wc -l | sed 's/^[ \t]*//;s/[ \t]*$//')
 if [ $gtm_dirs -gt 1 ]; then
-    echo "More than one version of GT.M installed!"
-    echo "Can't determine what version of GT.M to use"
+    echo "More than one version of GT.M/YottaDB installed!"
+    echo "Can't determine what version of GT.M/YottaDB to use"
     exit 1
 fi
 
 # Only one GT.M version found
-gtm_dist=/opt/lsb-gtm/$(ls -1 /opt/lsb-gtm/)
-gtmver=$(ls -1 /opt/lsb-gtm/)
+gtm_dist=$checkDir$(ls -1 $checkDir)
+gtmver=$(ls -1 $checkDir)
+
 
 # TODO: implement argument for basedir
 # $basedir is the base directory for the instance
@@ -175,13 +191,7 @@ chown $instance:$instance $basedir/etc/env
 echo "source $basedir/etc/env" >> $basedir/.bashrc
 
 # Setup base gtmroutines
-if [[ $gtmver == *"6.2"* ]]; then
-    echo "Adding gtmroutines for GT.M >= 6.2"
-    gtmroutines="\$basedir/r/\$gtmver*($basedir/r)"
-else
-    echo "Adding gtmroutines for GT.M < 6.2"
-    gtmroutines="\$basedir/r/\$gtmver(\$basedir/r)"
-fi
+gtmroutines="\$basedir/r/\$gtmver(\$basedir/r)"
 
 # 64bit GT.M can use a shared library instead of $gtm_dist
 if [[ $gtm_arch == "x86_64" && -e $basedir/lib/gtm/libgtmutil.so ]]; then
@@ -223,8 +233,6 @@ chmod +x $basedir/bin/tied.sh
 # create startup script used by docker
 echo "#!/bin/bash"                                      > $basedir/bin/start.sh
 echo 'trap "/etc/init.d/'${instance}'vista stop" SIGTERM' >> $basedir/bin/start.sh
-echo 'echo Resetting box-vol pair'                      >> $basedir/bin/start.sh
-echo "su $instance -c \"source $basedir/etc/env && cd $basedir/tmp && mumps -run %XCMD 's IEN=\\\$O(^%ZIS(14.7,0)) s (boxvol,oldboxvol)=\\\$P(^%ZIS(14.7,IEN,0),\\\"^\\\",1) s \\\$P(boxvol,\\\":\\\",2)=\\\"\$(hostname)\\\" s \\\$P(^%ZIS(14.7,IEN,0),\\\"^\\\",1)=boxvol k ^%ZIS(14.7,\\\"B\\\",oldboxvol) s ^%ZIS(14.7,\\\"B\\\",boxvol,IEN)=\\\"\\\"'\""                      >> $basedir/bin/start.sh
 echo 'echo "Starting xinetd"'                           >> $basedir/bin/start.sh
 echo "/usr/sbin/xinetd"                                 >> $basedir/bin/start.sh
 echo 'echo "Starting sshd"'                             >> $basedir/bin/start.sh
@@ -277,9 +285,9 @@ chmod -R g+rw $basedir
 # Add firewall rules
 if $firewall; then
     if [[ $RHEL || -z $ubuntu ]]; then
-        sudo iptables -I INPUT 1 -p tcp --dport 9430 -j ACCEPT # RPC Broker
-        sudo iptables -I INPUT 1 -p tcp --dport 8001 -j ACCEPT # VistALink
-        sudo service iptables save
+        firewall-cmd --zone=public --add-port=9430/tcp --permanent # RPC Broker
+        firewall-cmd --zone=public --add-port=8001/tcp --permanent # VistALink
+        firewall-cmd --reload
     fi
 fi
 
