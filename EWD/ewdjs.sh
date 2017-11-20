@@ -180,11 +180,12 @@ fi
 
 # Add firewall rules
 if $firewall; then
-    if [[ $RHEL || -z $ubuntu ]]; then
-        sudo iptables -I INPUT 1 -p tcp --dport 8080 -j ACCEPT # EWD.js
-
-        sudo service iptables save
-    fi
+  if [[ $RHEL || -z $ubuntu ]]; then
+      firewall-cmd --zone=public --add-port=8080/tcp --permanent # EWD.js
+      firewall-cmd --zone=public --add-port=8000/tcp --permanent # EWD.js Webservices
+      firewall-cmd --zone=public --add-port=8081/tcp --permanent # EWD VistA Term
+      firewall-cmd --reload
+  fi
 fi
 
 echo "Done installing qewd"
