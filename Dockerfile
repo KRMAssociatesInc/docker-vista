@@ -2,7 +2,7 @@ FROM centos
 
 RUN echo "multilib_policy=best" >> /etc/yum.conf
 RUN yum  -y update && \
-	yum install -y gcc-c++ git xinetd perl curl python openssh-server openssh-clients expect man python-argparse sshpass wget make cmake dos2unix which unzip || true && \
+	yum install -y gcc-c++ git xinetd perl curl python openssh-server openssh-clients expect man python-argparse sshpass wget make cmake dos2unix which unzip lsof || true && \
 	yum install -y http://libslack.org/daemon/download/daemon-0.6.4-1.i686.rpm > /dev/null && \
 	package-cleanup --cleandupes && \
 	yum  -y clean all
@@ -18,20 +18,20 @@ RUN ssh-keygen -f /etc/ssh/ssh_host_rsa_key -N '' -t rsa && \
 WORKDIR /opt/vista
 ADD . /opt/vista/
 
-# OSEHRA VistA
-RUN ./autoInstaller.sh -g -b -e -p && \
+# OSEHRA VistA (YottaDB, no bootstrap, with QEWD and Panorama)
+RUN ./autoInstaller.sh -y -b -e -m && \
 	rm -rf /home/osehra/Dashboard
+ENTRYPOINT /home/osehra/bin/start.sh
 
-# WorldVistA
+# WorldVistA (GTM, no boostrap, skip testing)
 #RUN ./autoInstaller.sh -g -b -s -i worldvista -a https://github.com/glilly/wvehr2-dewdrop/archive/master.zip && \
 #	rm -rf /usr/local/src/VistA-Source
+#ENTRYPOINT /home/worldvista/bin/start.sh
 
-# vxVistA
-#RUN ./autoInstaller.sh -g -b -s -i vxvista -a https://github.com/OSEHRA/vxVistA-M/archive/master.zip && \
+# vxVistA (YottaDB, no boostrap, skip testing, and do post-install as well)
+#RUN ./autoInstaller.sh -y -b -s -i vxvista -a https://github.com/OSEHRA/vxVistA-M/archive/master.zip -p ./Common/vxvistaPostInstall.sh && \
 #	rm -rf /usr/local/src/VistA-Source
+#ENTRYPOINT /home/vxvista/bin/start.sh
 
 EXPOSE 22 8001 9430 8080
 
-ENTRYPOINT /home/osehra/bin/start.sh
-#ENTRYPOINT /home/worldvista/bin/start.sh
-#ENTRYPOINT /home/vxvista/bin/start.sh
