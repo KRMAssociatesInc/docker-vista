@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #---------------------------------------------------------------------------
-# Copyright 2011-2013 The Open Source Electronic Health Record Agent
+# Copyright 2011-2017 The Open Source Electronic Health Record Agent
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,10 +15,23 @@
 # limitations under the License.
 #---------------------------------------------------------------------------
 
+# Turn this flag on for debugging.
+#set -x;
+
 # Make sure we are root
 if [[ $EUID -ne 0 ]]; then
     echo "This script must be run as root" 1>&2
     exit 1
+fi
+
+# Are we running on a local repo? If so, don't clone the "VistA" repo again!
+currentDir=$(dirname "$(readlink -f "$0")")
+parentDir=$(dirname $currentDir)
+parentdirname=$(basename $parentDir)
+if [ "$parentdirname" = "Install" ]; then
+    localVistARepo="true"
+else
+    localVistARepo="false"
 fi
 
 # Options
@@ -48,18 +61,19 @@ usage()
       -r    Alternate VistA-M repo branch (git format only)
       -b    Skip bootstrapping system (used for docker)
       -c    Path to Caché installer
-      -d    Create development directories (s & p) (GT.M only)
+      -d    Create development directories (s & p) (GT.M and YottaDB only)
       -e    Install QEWD (assumes development directories)
-      -p    Install Panorama (assumes development directories and QEWD)
+      -m    Install Panorama (assumes development directories and QEWD)
       -g    Use GT.M
       -i    Instance name
       -p    Post install hook (path to script)
       -s    Skip testing
+      -y    Use YottaDB
 
 EOF
 }
 
-while getopts ":ha:c:bepdgi:p:sr:" option
+while getopts ":ha:c:bemdgi:p:sr:y" option
 do
     case $option in
         h)
@@ -82,7 +96,7 @@ do
             installEWD=true
             developmentDirectories=true
             ;;
-        p)
+        m)
             installEWD=true
             developmentDirectories=true
             installPanorama=true
@@ -102,6 +116,9 @@ do
             ;;
         s)
             skipTests=true
+            ;;
+        y)
+            installYottaDB=true
             ;;
     esac
 done
@@ -143,13 +160,17 @@ if [ -z $skipTests ]; then
     skipTests=false
 fi
 
+if [ -z $installYottaDB ]; then
+    installYottaDB=false
+fi
+
 if [ -z $cacheinstallerpath ]; then
     cacheinstallerpath=false;
 fi
 
 # Quit if no M environment viable
-if [[ ! $installgtm || ! $cacheinstallerpath ]]; then
-    echo "You need to either provide a path to the Caché installer or install GT.M!"
+if [[ ! $installgtm || ! $cacheinstallerpath || ! $installYottaDB ]]; then
+    echo "You need to either provide a path to the Caché installer or install GT.M or YottaDB!"
     exit 1
 fi
 
@@ -159,9 +180,13 @@ echo "Create development directories: $developmentDirectories"
 echo "Installing an instance named: $instance"
 echo "Installing QEWD: $installEWD"
 echo "Installing Panorama: $installPanorama"
-echo "Post install hook: $postInstall"
+echo "Post install hook: $postInstallScript"
 echo "Skip Testing: $skipTests"
 echo "Skip bootstrap: $bootstrap"
+echo "Use Cache: $cacheinstallerpath"
+echo "Use GT.M: $installgtm"
+echo "Use YottaDB: $installYottaDB"
+echo "Running on local repo: $localVistARepo"
 
 # Get primary username if using sudo, default to $username if not sudo'd
 if $bootstrap; then
@@ -183,34 +208,18 @@ echo This script will add $primaryuser to the VistA group
 test -d /home/$instance/g &&
 { echo "VistA already Installed. Aborting."; exit 0; }
 
-# Install the epel repo (needed for cmake28)
-if $bootstrap; then
-    cat > /etc/yum.repos.d/epel.repo << EOF
-    [epel]
-    name=epel
-    baseurl=http://download.fedoraproject.org/pub/epel/6/\$basearch
-    enabled=1
-    gpgcheck=0
-EOF
-fi
-
 # extra utils - used for cmake and dashboards and initial clones
 if $bootstrap; then
     echo "Updating operating system"
     yum update -y > /dev/null
-    yum install -y cmake28 git dos2unix > /dev/null
+    yum install -y cmake unzip git dos2unix > /dev/null
     yum install -y http://libslack.org/daemon/download/daemon-0.6.4-1.i686.rpm > /dev/null
-
-    # Fix cmake28 links
-    ln -s /usr/bin/cmake28 /usr/bin/cmake
-    ln -s /usr/bin/ctest28 /usr/bin/ctest
-    ln -s /usr/bin/ccmake28 /usr/bin/ccmake
-    ln -s /usr/bin/cpack28 /usr/bin/cpack
 fi
 
-# Clone repos
+# Clone repos - Dashboard
 if ! $skipTests; then
     cd /usr/local/src
+    rm -rf VistA-Dashboard
     git clone -q https://github.com/OSEHRA/VistA -b dashboard VistA-Dashboard
 fi
 
@@ -227,12 +236,17 @@ if [ -d /vagrant ]; then
     dos2unix /vagrant/GTM/gtminstall_SHA1 > /dev/null 2>&1
 else
     if $bootstrap; then
-        git clone -q https://github.com/OSEHRA/VistA
-        scriptdir=/usr/local/src/VistA/Scripts/Install
+        if $localVistARepo; then
+           scriptdir=$parentDir
+        else
+	         git clone -q https://github.com/OSEHRA/VistA
+           scriptdir=/usr/local/src/VistA/Scripts/Install
+        fi
     else
         scriptdir=/opt/vista
     fi
 fi
+
 
 # bootstrap the system
 if $bootstrap; then
@@ -246,7 +260,7 @@ fi
 # Ensure scripts know if we are RHEL like or Ubuntu like
 export RHEL=true;
 
-# Install GT.M if requested
+# Install GT.M or YottaDB
 if $installgtm; then
     cd GTM
     if $bootstrap; then
@@ -259,6 +273,21 @@ if $installgtm; then
         ./createVistaInstance.sh -i $instance
     else
         ./createVistaInstance.sh -i $instance -f
+    fi
+fi
+
+if $installYottaDB; then
+    cd GTM
+    if $bootstrap; then
+        ./install.sh -y
+    else
+        ./install.sh -s -y
+    fi
+    # Create the VistA instance
+    if $bootstrap; then
+        ./createVistaInstance.sh -i $instance -y
+    else
+        ./createVistaInstance.sh -i $instance -f -y
     fi
 fi
 
@@ -314,15 +343,23 @@ if $skipTests; then
     # Perform the import
     su $instance -c "source $basedir/etc/env && $scriptdir/GTM/importVistA.sh"
 
-    # Run ZTMGRSET accepting the defaults
-    su $instance -c "mumps -run %XCMD 'D ^ZTMGRSET' << EOF
-8
+    # Get GT.M Optimized Routines from Kernel-GTM project and unzip
+    curl -fsSLO --progress-bar https://github.com/shabiel/Kernel-GTM/releases/download/XU-8.0-10001/virgin_install.zip
 
+    # Unzip file, put routines, delete old objects
+    su $instance -c "unzip -qo virgin_install.zip -d $basedir/r/"
+    su $instance -c "unzip -l virgin_install.zip | awk '{print \$4}' | grep '\.m' | sed 's/.m/.o/' | xargs -i rm -fv r/$gtmver/{}"
+    su $instance -c "rm -fv r/$gtmver/_*.o"
 
+    # Get the Auto-configurer for VistA/RPMS and run
+    curl -fsSLO https://raw.githubusercontent.com/shabiel/random-vista-utilities/master/KBANTCLN.m
+    su $instance -c "mv KBANTCLN.m $basedir/r/"
 
+    # Run the auto-configurer accepting the defaults
+    su $instance -c "source $basedir/etc/env && mumps -run START^KBANTCLN"
 
-Y
-EOF"
+    # Start Taskman
+    su $instance -c "source $basedir/etc/env && mumps -run ^ZTMB"
 else
     # Attempt to bypass huge git clone by getting the zip files and unzipping them where they go
     su $instance -c "source $basedir/etc/env && mkdir -p $basedir/Dashboard"
@@ -391,7 +428,7 @@ fi
 
 # Post install hook
 if $postInstall; then
-    su $instance -c "source $basedir/etc/env && $postInstallScript"
+    su $instance -c "source $basedir/etc/env && pushd $scriptdir && $postInstallScript && popd"
 fi
 
 # Ensure group permissions are correct

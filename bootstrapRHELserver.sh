@@ -21,8 +21,9 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-# Update the server from repositories
-yum update -y > /dev/null
-
 # Install baseline packages
-yum install -y gcc-c++ git xinetd perl wget curl python openssh-server expect man mysql mysql-server python-argparse sshpass > /dev/null
+yum install -y unzip wget cmake git xinetd perl wget curl python openssh-server expect man mysql mysql-server python-argparse sshpass lsof > /dev/null
+
+# Enable & Start the firewall
+systemctl enable firewalld
+systemctl start firewalld
