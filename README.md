@@ -10,6 +10,9 @@ This has only been tested using:
 ## Pre-requisites
 A working [Docker](https://www.docker.com/community-edition#/download) installation on the platform of choice.
 
+## Note
+You cannot use docker exec -it osehravista bash to get access to the mumps prompt. This is likely due to how docker permission schemes for shared memory access works. Instead always gain access via the ssh commands below
+
 ## Pre-built images
 Pre-built images using this repository are available on [docker hub](https://hub.docker.com/r/krmassociates/)
 
