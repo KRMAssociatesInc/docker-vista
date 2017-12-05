@@ -19,9 +19,9 @@ WORKDIR /opt/vista
 ADD . /opt/vista/
 
 # OSEHRA VistA (YottaDB, no bootstrap, with QEWD and Panorama)
-RUN ./autoInstaller.sh -y -b -e -m && \
-	rm -rf /home/osehra/Dashboard
-ENTRYPOINT /home/osehra/bin/start.sh
+#RUN ./autoInstaller.sh -y -b -e -m && \
+#	rm -rf /home/osehra/Dashboard
+#ENTRYPOINT /home/osehra/bin/start.sh
 
 # WorldVistA (GTM, no boostrap, skip testing)
 #RUN ./autoInstaller.sh -g -b -s -i worldvista -a https://github.com/glilly/wvehr2-dewdrop/archive/master.zip && \
@@ -33,5 +33,9 @@ ENTRYPOINT /home/osehra/bin/start.sh
 #	rm -rf /usr/local/src/VistA-Source
 #ENTRYPOINT /home/vxvista/bin/start.sh
 
-EXPOSE 22 8001 9430 8080
+# RPMS (YottaDB, no boostrap, skip testing, and do post-install as well)
+RUN ./autoInstaller.sh -y -b -s -i rpms -a https://github.com/shabiel/FOIA-RPMS/archive/master.zip -p ./Common/rpmsPostInstall.sh && \
+	rm -rf /usr/local/src/VistA-Source
+ENTRYPOINT /home/rpms/bin/start.sh
 
+EXPOSE 22 8001 9430 8080

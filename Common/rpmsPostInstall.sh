@@ -1,0 +1,26 @@
+#!/bin/bash
+#set -x
+
+# Get GT.M Optimized Routines from Kernel-GTM project (newer version) and unzip
+pushd ~
+rm virgin_install.zip
+curl -fsSLO https://github.com/shabiel/Kernel-GTM/releases/download/XU-8.0-10002/virgin_install.zip
+
+# Unzip file, put routines, delete old objects
+unzip -qo virgin_install.zip -d $basedir/r/
+unzip -l virgin_install.zip | awk '{print $4}' | grep '\.m' | sed 's/.m/.o/' | xargs -i rm -fv r/$gtmver/{}
+rm -fv $basedir/r/$gtmver/_*.o
+
+# Get the Auto-configurer for VistA/RPMS and run
+curl -fsSLO https://raw.githubusercontent.com/shabiel/random-vista-utilities/master/KBANTCLN.m
+mv KBANTCLN.m $basedir/r/
+rm -fv $basedir/r/$gtmver/KBANTCLN.o
+
+# Run RPMS Post Install Code
+popd
+cp ./Common/rpmsPostInstall.m $basedir/r/
+
+# Make sure .mjo and .mje files end up in the ~/tmp directory
+pushd ~/tmp/
+$gtm_dist/mumps -run ^rpmsPostInstall
+popd
