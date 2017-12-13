@@ -28,10 +28,16 @@ ADD . /opt/vista/
 #	rm -rf /usr/local/src/VistA-Source
 #ENTRYPOINT /home/worldvista/bin/start.sh
 
+
 # vxVistA (YottaDB, no boostrap, skip testing, and do post-install as well)
 #RUN ./autoInstaller.sh -y -b -s -i vxvista -a https://github.com/OSEHRA/vxVistA-M/archive/master.zip -p ./Common/vxvistaPostInstall.sh && \
 #	rm -rf /usr/local/src/VistA-Source
 #ENTRYPOINT /home/vxvista/bin/start.sh
+
+# VEHU (GTM, no bootstrap, skip testing)
+#RUN ./autoInstaller.sh -g -b -s -i vehu -a https://github.com/OSEHRA-Sandbox/VistA-VEHU-M/archive/master.zip && \
+#	rm -rf /usr/local/src/VistA-Source
+#ENTRYPOINT /home/vehu/bin/start.sh
 
 # RPMS (YottaDB, no boostrap, skip testing, and do post-install as well)
 RUN ./autoInstaller.sh -y -b -s -i rpms -a https://github.com/shabiel/FOIA-RPMS/archive/master.zip -p ./Common/rpmsPostInstall.sh && \
