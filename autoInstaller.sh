@@ -330,6 +330,7 @@ if $skipTests; then
             git clone --depth 1 $repoPath VistA-Source
         fi
     else
+        echo "Downloading "$repoPath
         curl -fsSL --progress-bar $repoPath -o VistA-M-master.zip
         unzip -q VistA-M-master.zip
         rm VistA-M-master.zip
@@ -359,7 +360,7 @@ if $skipTests; then
     su $instance -c "source $basedir/etc/env && mumps -run START^KBANTCLN"
 
     # Start Taskman
-    su $instance -c "source $basedir/etc/env && mumps -run ^ZTMB"
+    su $instance -c "source $basedir/etc/env && cd ~/tmp/ && mumps -run ^ZTMB"
 else
     # Attempt to bypass huge git clone by getting the zip files and unzipping them where they go
     su $instance -c "source $basedir/etc/env && mkdir -p $basedir/Dashboard"
