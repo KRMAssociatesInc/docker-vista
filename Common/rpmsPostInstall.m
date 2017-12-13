@@ -1,4 +1,4 @@
-rpmsPostInstall ; OSE/SMH - rpmsPostInstall ;2017-12-05  4:31 PM
+rpmsPostInstall ; OSE/SMH - rpmsPostInstall ;2017-12-08  10:38 AM
  ;
  D DT^DICRW
  ;
@@ -40,6 +40,34 @@ rpmsPostInstall ; OSE/SMH - rpmsPostInstall ;2017-12-05  4:31 PM
  ;
  ; 7. Update the exipration date for the verify code of the two demo users
  D MES^XPDUTL("Updating Verify Code expiration dates")
- S $P(^VA(200,1,.1),U)=$H
- S $P(^VA(200,4,.1),U)=$H
+ N I,Z F I=.9:0 S I=$O(^VA(200,I)) Q:'I  S Z=^(I,0) I $P(Z,U,3)]"" S $P(^VA(200,I,.1),U)=$H
+ ;
+ ; 8. Update Intro Message with Access and Verify codes
+ D MES^XPDUTL("Intro Message Update")
+ N WP S WP=$$GET1^DIQ(8989.3,1,240,,"WP")
+ ;
+ N DONE S DONE=0
+ N I F I=0:0 S I=$O(WP(I)) Q:'I  I WP(I)["ACCESS CODE" S DONE=1 QUIT
+ I DONE QUIT
+ ;
+ N N S N=$O(WP(" "),-1)+1
+ S WP(N)=" ",N=N+1
+ S WP(N)=" Login with one of the following users: ",N=N+1
+ S WP(N)=" ",N=N+1
+ S $E(WP(N),1)="NAME"
+ S $E(WP(N),20)="ACCESS CODE"
+ S $E(WP(N),35)="VERIFY CODE"
+ S N=N+1
+ S $E(WP(N),1)="===="
+ S $E(WP(N),20)="==========="
+ S $E(WP(N),35)="==========="
+ S N=N+1
+ ;
+ N I,Z F I=.9:0 S I=$O(^VA(200,I)) Q:'I  S Z=^(I,0) I $P(Z,U,3)]"" D
+ . S $E(WP(N),1)=$P(Z,U)
+ . S $E(WP(N),20)=$P(Z,U,3)
+ . S $E(WP(N),35)=$P(^VA(200,I,.1),U,2)
+ . S N=N+1
+ ;
+ D WP^DIE(8989.3,"1,",240,"K",$NA(WP))
  QUIT

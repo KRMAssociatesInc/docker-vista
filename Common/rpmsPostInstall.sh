@@ -6,10 +6,13 @@ pushd ~
 rm virgin_install.zip
 curl -fsSLO https://github.com/shabiel/Kernel-GTM/releases/download/XU-8.0-10002/virgin_install.zip
 
-# Unzip file, put routines, delete old objects
-unzip -qo virgin_install.zip -d $basedir/r/
-unzip -l virgin_install.zip | awk '{print $4}' | grep '\.m' | sed 's/.m/.o/' | xargs -i rm -fv r/$gtmver/{}
-rm -fv $basedir/r/$gtmver/_*.o
+# Unzip file, put routines, delete old objects, recompile
+unzip -qo ~/virgin_install.zip -d $basedir/r/
+unzip -l ~/virgin_install.zip | awk '{print $4}' | grep '\.m' | sed 's/.m/.o/' | xargs -i rm -fv r/$gtmver/{}
+rm -f $basedir/r/$gtmver/_*.o
+pushd $basedir/r/$gtmver/
+unzip -l ~/virgin_install.zip | awk '{print $4}' | grep '\.m' | xargs -i -n 1 $gtm_dist/mumps -nowarning ../{}
+popd
 
 # Get the Auto-configurer for VistA/RPMS and run
 curl -fsSLO https://raw.githubusercontent.com/shabiel/random-vista-utilities/master/KBANTCLN.m
