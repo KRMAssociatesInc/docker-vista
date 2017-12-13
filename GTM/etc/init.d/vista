@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #---------------------------------------------------------------------------
-# Copyright 2011-2012 The Open Source Electronic Health Record Agent
+# Copyright 2011-2017 The Open Source Electronic Health Record Agent
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,8 +41,13 @@ start() {
     echo "Ensuring a consistant database (mupip recover -backward)"
     su $instance -c "source $basedir/etc/env && $gtm_dist/mupip journal -recover -backward $basedir/j/$instance.mjl >> $basedir/log/journalRecovery.log 2>&1 && $basedir/bin/enableJournal.sh"
 
-    # Rundown temp database since we don't care about it
-    su $instance -c "source $basedir/etc/env && $gtm_dist/mupip rundown -region \"TEMP\" >> $basedir/log/tempRundown.log"
+    # Delete temp and then recreate
+    echo "Deleting and recreating temp region"
+    rm -vf $basedir/g/temp.dat
+    su $instance -c "source $basedir/etc/env && $gtm_dist/mupip create -region=TEMP"
+
+    # Rundown readonly GT.M/YDB databases
+    for f in $gtm_dist/*.dat; do $gtm_dist/mupip rundown -f $f; done
 
     # Start TaskMan
     echo "Starting TaskMan"
