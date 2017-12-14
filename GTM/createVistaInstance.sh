@@ -18,7 +18,7 @@
 # Create directories for instance Routines, Objects, Globals, Journals,
 # Temp Files
 # This utility requires root privliges
-#set -x
+set -x
 
 # Make sure we are root
 if [[ $EUID -ne 0 ]]; then
@@ -41,11 +41,12 @@ usage()
       -h    Show this message
       -f    Skip setting firewall rules
       -i    Instance name
+      -r    Put RPMS Scripts into XINETD
       -y    Use YottaDB
 EOF
 }
 
-while getopts ":hfi:y" option
+while getopts ":hfi:ry" option
 do
     case $option in
         h)
@@ -57,6 +58,9 @@ do
             ;;
         i)
             instance=$(echo $OPTARG |tr '[:upper:]' '[:lower:]')
+            ;;
+        r)
+            rpmsScripts=true
             ;;
         y)
             installYottaDB=true
@@ -75,6 +79,10 @@ fi
 
 if [ -z $installYottaDB ]; then
     installYottaDB=false
+fi
+
+if [ -z $rpmsScripts ]; then
+    rpmsScripts=false
 fi
 
 echo "Creating $instance..."
@@ -152,8 +160,10 @@ perl -pi -e 's/foia/'$instance'/g' $basedir/etc/init.d/vista
 # Create symbolic link to enable brokers
 ln -s $basedir/etc/xinetd.d/vista-rpcbroker /etc/xinetd.d/$instance-vista-rpcbroker
 ln -s $basedir/etc/xinetd.d/vista-vistalink /etc/xinetd.d/$instance-vista-vistalink
-ln -s $basedir/etc/xinetd.d/vista-bmxnet /etc/xinetd.d/$instance-vista-bmxnet
-ln -s $basedir/etc/xinetd.d/vista-cia /etc/xinetd.d/$instance-vista-cia
+if $rpmsScripts; then
+    ln -s $basedir/etc/xinetd.d/vista-bmxnet /etc/xinetd.d/$instance-vista-bmxnet
+    ln -s $basedir/etc/xinetd.d/vista-cia /etc/xinetd.d/$instance-vista-cia
+fi
 
 # Create startup service
 ln -s $basedir/etc/init.d/vista /etc/init.d/${instance}vista

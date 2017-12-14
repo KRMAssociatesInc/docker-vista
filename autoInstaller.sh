@@ -16,7 +16,7 @@
 #---------------------------------------------------------------------------
 
 # Turn this flag on for debugging.
-#set -x;
+set -x;
 
 # Make sure we are root
 if [[ $EUID -ne 0 ]]; then
@@ -68,12 +68,13 @@ usage()
       -i    Instance name
       -p    Post install hook (path to script)
       -s    Skip testing
+      -w    Install RPMS XINETD scripts
       -y    Use YottaDB
 
 EOF
 }
 
-while getopts ":ha:c:bemdgi:p:sr:y" option
+while getopts ":ha:c:bemdgi:p:sr:wy" option
 do
     case $option in
         h)
@@ -116,6 +117,9 @@ do
             ;;
         s)
             skipTests=true
+            ;;
+        w)
+            installRPMS=true
             ;;
         y)
             installYottaDB=true
@@ -168,6 +172,10 @@ if [ -z $cacheinstallerpath ]; then
     cacheinstallerpath=false;
 fi
 
+if [ -z $installRPMS ]; then
+    installRPMS=false;
+fi
+
 # Quit if no M environment viable
 if [[ ! $installgtm || ! $cacheinstallerpath || ! $installYottaDB ]]; then
     echo "You need to either provide a path to the Caché installer or install GT.M or YottaDB!"
@@ -186,6 +194,7 @@ echo "Skip bootstrap: $bootstrap"
 echo "Use Cache: $cacheinstallerpath"
 echo "Use GT.M: $installgtm"
 echo "Use YottaDB: $installYottaDB"
+echo "Install RPMS scripts: $installRPMS"
 echo "Running on local repo: $localVistARepo"
 
 # Get primary username if using sudo, default to $username if not sudo'd
@@ -239,7 +248,7 @@ else
         if $localVistARepo; then
            scriptdir=$parentDir
         else
-	         git clone -q https://github.com/OSEHRA/VistA
+           git clone -q https://github.com/OSEHRA/VistA
            scriptdir=/usr/local/src/VistA/Scripts/Install
         fi
     else
@@ -261,39 +270,30 @@ fi
 export RHEL=true;
 
 # Install GT.M or YottaDB
-if $installgtm; then
-    cd GTM
-    if $bootstrap; then
-        ./install.sh
-    else
-        ./install.sh -s
-    fi
-    # Create the VistA instance
-    if $bootstrap; then
-        ./createVistaInstance.sh -i $instance
-    else
-        ./createVistaInstance.sh -i $instance -f
-    fi
+installydbOptions=""
+createVistaInstanceOptions=""
+if ! $bootstrap; then
+   installydbOptions+="-s "
+   createVistaInstanceOptions+="-f "
+fi
+if $installYottaDB; then
+   installydbOptions+="-y "
+   createVistaInstanceOptions+="-y "
+fi
+if $installRPMS; then
+   createVistaInstanceOptions+="-r "
 fi
 
-if $installYottaDB; then
+if [ $installgtm == "true" ] || [ $installYottaDB == "true" ]; then
     cd GTM
-    if $bootstrap; then
-        ./install.sh -y
-    else
-        ./install.sh -s -y
-    fi
-    # Create the VistA instance
-    if $bootstrap; then
-        ./createVistaInstance.sh -i $instance -y
-    else
-        ./createVistaInstance.sh -i $instance -f -y
-    fi
+    ./install.sh $installydbOptions
+    ./createVistaInstance.sh -i $instance $createVistaInstanceOptions
 fi
 
 # Install Caché if requested
 if $cacheinstallerpath; then
     echo "Cache installer path:" $cacheinstallerpath
+    echo "Cache installer not operational at this point."
 fi
 
 # Modify the primary user to be able to use the VistA instance
@@ -433,4 +433,5 @@ if $postInstall; then
 fi
 
 # Ensure group permissions are correct
+echo "Please wait while I fix the group permissions on the files..."
 chmod -R g+rw /home/$instance
