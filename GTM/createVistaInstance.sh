@@ -18,7 +18,9 @@
 # Create directories for instance Routines, Objects, Globals, Journals,
 # Temp Files
 # This utility requires root privliges
-set -x
+
+# for debugging
+#set -x
 
 # Make sure we are root
 if [[ $EUID -ne 0 ]]; then

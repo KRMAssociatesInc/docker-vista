@@ -16,7 +16,7 @@
 #---------------------------------------------------------------------------
 
 # Turn this flag on for debugging.
-set -x;
+#set -x;
 
 # Make sure we are root
 if [[ $EUID -ne 0 ]]; then
