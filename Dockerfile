@@ -2,7 +2,7 @@ FROM centos
 
 RUN echo "multilib_policy=best" >> /etc/yum.conf
 RUN yum  -y update && \
-	yum install -y gcc-c++ git xinetd perl curl python openssh-server openssh-clients expect man python-argparse sshpass wget make cmake dos2unix which unzip lsof || true && \
+	yum install -y gcc-c++ git xinetd perl curl python openssh-server openssh-clients expect man python-argparse sshpass wget make cmake dos2unix which unzip lsof net-tools|| true && \
 	yum install -y http://libslack.org/daemon/download/daemon-0.6.4-1.i686.rpm > /dev/null && \
 	package-cleanup --cleandupes && \
 	yum  -y clean all
@@ -48,3 +48,8 @@ RUN ./autoInstaller.sh -w -y -b -s -i rpms -a https://github.com/shabiel/FOIA-RP
 	rm -rf /usr/local/src/VistA-Source
 ENTRYPOINT /home/rpms/bin/start.sh
 EXPOSE 22 9100 9101 9430
+
+# Caché Install with local DAT file
+#RUN ./autoInstaller.sh -c -b -s -i vehu
+#ENTRYPOINT /opt/cachesys/vehu/bin/start.sh
+#EXPOSE 22 8001 9430 8080 57772
