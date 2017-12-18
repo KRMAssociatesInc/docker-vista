@@ -79,7 +79,7 @@ usage()
 EOF
 }
 
-while getopts ":ha:cbemdgi:p:sr:y" option
+while getopts ":ha:cbemdgi:p:sr:wy" option
 do
     case $option in
         h)
