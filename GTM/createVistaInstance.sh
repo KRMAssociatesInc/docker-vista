@@ -277,7 +277,14 @@ echo "a -n TMP        -r=TEMP"                  >> $basedir/etc/db.gde
 echo "a -n TEMP       -r=TEMP"                  >> $basedir/etc/db.gde
 echo "a -n UTILITY    -r=TEMP"                  >> $basedir/etc/db.gde
 echo "a -n XTMP       -r=TEMP"                  >> $basedir/etc/db.gde
+echo "a -n XUTL       -r=TEMP"                  >> $basedir/etc/db.gde
 echo "a -n CacheTemp* -r=TEMP"                  >> $basedir/etc/db.gde
+# Sam sez: This list was given to me by Floyd Dennis on Dec 12 2017 from the CSMT branch
+if $rpmsScripts; then
+  for global in ABMDTMP ACPTEMP AGSSTEMP AGSSTMP1 AGSTEMP AGTMP APCHTMP ATXTMP AUMDDTMP AUMDOTMP AUTTEMP BARTMP BDMTMP BDWBLOG BDWTMP BGOTEMP BGOTMP BGPELLDBA BPATEMP BPCTMP BSDZTMP BGPTMP BIPDUE BITEMP BITMP BQIPAT BQIFAC BQIPAT BQIPROV BTPWPQ BTPWQ BUSAD; do
+    echo "a -n $global -r=TEMP"                 >> $basedir/etc/db.gde
+  done
+fi
 echo "sh -a"                                    >> $basedir/etc/db.gde
 
 # Ensure correct permissions for db.gde
@@ -305,4 +312,8 @@ if $firewall; then
     fi
 fi
 
-echo "VistA instance $instance created!"
+if ! $rpmsScripts; then
+  echo "VistA instance $instance created!"
+else
+  echo "RPMS instance $instance created!"
+fi
