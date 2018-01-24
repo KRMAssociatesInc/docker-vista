@@ -103,10 +103,17 @@ export ISC_PACKAGE_CACHEGROUP=cachegrp$instance
 export ISC_PACKAGE_STARTCACHE="N"
 
 # Install Caché
-./cinstall_silent
+if [ -e cinstall_silent ]; then
+    ./cinstall_silent
+else
+    # the cachekit has a subdirectory before we can find cinstall_silent
+    cd $(ls -1)
+    ./cinstall_silent
+fi
+
 popd
 if [ -e $scriptdir/cache.key ]; then
-	cp $scriptdir/cache.key $basedir/mgr
+    cp $scriptdir/cache.key $basedir/mgr
 fi
 
 # Perform subsitutions in cpf file and copy to destination
@@ -117,10 +124,10 @@ perl -pi -e 's/FOIA/'${instance^^}'/g' $basedir/cache.cpf-new
 # Move CACHE.dat
 mkdir -p $basedir/vista
 if [ -e /opt/vista/CACHE.DAT ]; then
-	mv /opt/vista/CACHE.DAT $basedir/vista/CACHE.DAT
-	chown root:cachegrp$instance $basedir/vista/CACHE.DAT
-	chmod ug+rw $basedir/vista/CACHE.DAT
-	chmod ug+rw $basedir/vista
+    mv /opt/vista/CACHE.DAT $basedir/vista/CACHE.DAT
+    chown root:cachegrp$instance $basedir/vista/CACHE.DAT
+    chmod ug+rw $basedir/vista/CACHE.DAT
+    chmod ug+rw $basedir/vista
 fi
 
 # Clean up from install
