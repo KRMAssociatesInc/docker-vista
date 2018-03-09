@@ -96,7 +96,7 @@ tar xzf $cachekit
 export ISC_PACKAGE_INITIAL_SECURITY="minimal"
 export ISC_PACKAGE_MGRUSER=cacheusr$instance
 export ISC_PACKAGE_MGRGROUP=cachegrp$instance
-export ISC_PACKAGE_INSTANCENAME=$instance
+export ISC_PACKAGE_INSTANCENAME=CACHE
 export ISC_PACKAGE_INSTALLDIR=$basedir
 export ISC_PACKAGE_CACHEUSER=cacheusr$instance
 export ISC_PACKAGE_CACHEGROUP=cachegrp$instance
@@ -112,8 +112,8 @@ else
 fi
 
 popd
-if [ -e $scriptdir/cache.key ]; then
-    cp $scriptdir/cache.key $basedir/mgr
+if [ -e /opt/vista/cache.key ]; then
+    cp /opt/vista/cache.key $basedir/mgr
 fi
 
 # Perform subsitutions in cpf file and copy to destination
