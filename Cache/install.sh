@@ -137,7 +137,7 @@ mv /etc/redhat-release.orig /etc/redhat-release
 
 # create startup script used by docker
 echo "#!/bin/bash"                                      > $basedir/bin/start.sh
-echo 'trap "ccontrol stop '${instance}' quietly" SIGTERM' >> $basedir/bin/start.sh
+echo 'trap "ccontrol stop CACHE quietly" SIGTERM'       >> $basedir/bin/start.sh
 echo 'echo "Starting sshd"'                             >> $basedir/bin/start.sh
 echo "/usr/sbin/sshd"                                   >> $basedir/bin/start.sh
 echo 'echo "Starting vista processes"'                  >> $basedir/bin/start.sh
