@@ -145,7 +145,7 @@ echo 'cp '${basedir}'/cache.cpf '${basedir}'/cache.cpf-old' >> $basedir/bin/star
 echo 'rm '${basedir}'/cache.cpf_*'                      >> $basedir/bin/start.sh
 echo 'cp '${basedir}'/cache.cpf-new '${basedir}'/cache.cpf' >> $basedir/bin/start.sh
 echo 'find '${basedir}'/ -iname CACHE.DAT -exec touch {} \;' >>$basedir/bin/start.sh
-echo "ccontrol start ${instance}"                       >> $basedir/bin/start.sh
+echo "ccontrol start CACHE"                             >> $basedir/bin/start.sh
 echo '# Create a fifo so that bash can read from it to' >> $basedir/bin/start.sh
 echo '# catch signals from docker'                      >> $basedir/bin/start.sh
 echo 'rm -f ~/fifo'                                     >> $basedir/bin/start.sh
