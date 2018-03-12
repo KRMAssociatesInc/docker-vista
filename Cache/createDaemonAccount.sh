@@ -65,7 +65,7 @@ fi
 
 SERVER_HOME=/opt/cachesys/$instance
 SERVER_USER=cacheusr$instance
-SERVER_NAME="Intersystems Cache $instance instance"
+SERVER_NAME="Intersystems Cache CACHE instance"
 SERVER_GROUP=cachegrp$instance
 
 # create user to avoid running server as root
