@@ -5,7 +5,7 @@
 # http://training.intersystems.com/tutorials/DocBook.UI.Page.cls?KEY=GHA_redhat_clusters
 # Edit the name of the Cache instance to be started into the shell
 # variable below.
-inst="prod"
+inst="vehu"
 basdir=`/usr/bin/ccontrol list $inst | grep -i directory: | awk {'print $2'}`
 if [ "${basdir}" = "" ]
 then
@@ -14,9 +14,9 @@ then
 fi
 type=$1
 localnode=`uname -a | awk '{print $2}'`
-# See how we were called. 
-case "$type" in 
-   
+# See how we were called.
+case "$type" in
+
   (start)
         # Start daemons.
    if [ -e ${basdir}/mgr/cache.ids ]
@@ -25,10 +25,10 @@ case "$type" in
       exit 1
    else
         # If there is no cache.ids file, it's just a normal startup.
-      touch /var/lock/subsys/cacheprod
+      touch /var/lock/subsys/cache$inst
       failflag=""
    fi
-   echo "Starting Ensemble instance $inst on $localnode"
+   echo "Starting Cache instance $inst on $localnode"
    ccontrol start $inst quietly
    status=$?
    case $status in
@@ -43,17 +43,17 @@ case "$type" in
        ;;
   (stop)
         # Stop daemons.
-        echo "Stopping Ensemble instance $inst on $localnode"
+        echo "Stopping Cache instance $inst on $localnode"
    ccontrol stop $inst quietly
-   rm -f /var/lock/subsys/cacheprod
+   rm -f /var/lock/subsys/cache$inst
    status=$?
    case $status in
    (1)
-       echo "Ensemble instance $inst failed to stop"
+       echo "Cache instance $inst failed to stop"
        exit 1
        ;;
    (0)
-       echo "Ensemble instance $inst stopped"
+       echo "Cache instance $inst stopped"
        exit 0
    esac
    ;;
@@ -72,5 +72,5 @@ case "$type" in
         echo "Usage: $0 {start|stop|status}"
         exit 1
 esac
-  
+
 exit 0

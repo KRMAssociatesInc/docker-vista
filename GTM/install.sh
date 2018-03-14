@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #---------------------------------------------------------------------------
-# Copyright 2011-2012 The Open Source Electronic Health Record Agent
+# Copyright 2011-2017 The Open Source Electronic Health Record Agent
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 # limitations under the License.
 #---------------------------------------------------------------------------
 
-# Install GT.M using gtminstall script
+# Install GT.M/YottaDB using ydbinstall script
 # This utility requires root privliges
 
 # Make sure we are root
@@ -34,20 +34,22 @@ usage()
     cat << EOF
     usage: $0 options
 
-    This script will automatically install GT.M
+    This script will automatically install GT.M/YottaDB
 
     DEFAULTS:
-      GT.M Version = V6.2-000
+      GT.M Version = V6.3-002
+      YottaDB Version = r1.10
 
     OPTIONS:
       -h    Show this message
+      -v    GT.M/YottaDB version to install
+      -y    Install YottaDB instead of GT.M
       -s    Skip setting shared memory parameters
-      -v    GT.M version to install
 
 EOF
 }
 
-while getopts ":hsv:" option
+while getopts "hsyv:" option
 do
     case $option in
         h)
@@ -60,67 +62,96 @@ do
         v)
             gtm_ver=$OPTARG
             ;;
+        y)
+            installYottaDB="true"
     esac
 done
 
 # Set defaults for options
-if [ -z $gtm_ver ]; then
-    gtm_ver=V6.2-000
+# GT.M
+if [ -z $gtm_ver ] && [ -z $installYottaDB ]; then
+    gtm_ver="V6.3-002"
+fi
+
+# YottaDB
+if [ $installYottaDB ] && [ -z $gtm_ver ]; then
+    gtm_ver="r1.10"
 fi
 
 if [ -z $sharedmem ]; then
     sharedmem=true
 fi
 
-# Download gtminstall script from SourceForge
-echo "Downloading gtminstall"
-curl -s --remote-name -L http://downloads.sourceforge.net/project/fis-gtm/GT.M%20Installer/v0.13/gtminstall
+# Download ydbinstall
+echo "Downloading ydbinstall"
+curl -s -L https://raw.githubusercontent.com/YottaDB/YottaDB/master/sr_unix/ydbinstall.sh -o ydbinstall
+
+# Verify hash as we are going to make it executable
+sha1sum -c --status ydbinstall_SHA1
+if [ $? -gt 0 ]; then
+    echo "Something went wrong downloading ydbinstall"
+    exit $?
+fi
 
 # Get kernel.shmmax to determine if we can use 32k strings
+# ${#...} is to compare lengths of strings before trying to use them as numbers
+# Ubuntu 16.04 box seems to have a shared memory of 18446744073692774399!!!
+# Bash just starts crying...
 if $sharedmem; then
     shmmax=$(sysctl -n kernel.shmmax)
+    shmmin=67108864
 
-    if [ $shmmax -ge 67108864 ]; then
+    if [ ${#shmmax} -ge ${#shmmin} ] || [ $shmmax -ge $shmmin ]; then
         echo "Current shared memory maximum is equal to or greater than 64MB"
         echo "Current shmmax is: " $shmmax
     else
         echo "Current shared memory maximum is less than 64MB"
         echo "Current shmmax is: " $shmmax
         echo "Setting shared memory maximum to 64MB"
-        echo "kernel.shmmax = 67108864" >> /etc/sysctl.conf
-        sysctl -w kernel.shmmax=67108864
+        echo "kernel.shmmax = $shmmin" >> /etc/sysctl.conf
+        sysctl -w kernel.shmmax=$shmmin
     fi
 fi
 
 # Make it executable
-chmod +x gtminstall
+chmod +x ydbinstall
 
 # Determine processor architecture - used to determine if we can use GT.M
 #                                    Shared Libraries
-# Default to x86 (32bit) - algorithm similar to gtminstall script
+# Changed to support ARM chips as well as x64/x86.
 arch=$(uname -m | tr -d _)
 if [ $arch == "x8664" ]; then
     gtm_arch="x86_64"
 else
-    gtm_arch="x86"
+    gtm_arch=$arch
 fi
 
-# Accept most defaults for gtminstall
+# Accept most defaults for ydbinstall
 # --ucaseonly-utils - override default to install only uppercase utilities
 #                     this follows VistA convention of uppercase only routines
-./gtminstall --ucaseonly-utils --installdir /opt/lsb-gtm/"$gtm_ver"_"$gtm_arch" $gtm_ver
-# Remove installgtm script as it is unnecessary
-rm ./gtminstall
+if [ "$installYottaDB" = "true" ] ; then
+    ./ydbinstall --ucaseonly-utils --installdir /opt/yottadb/"$gtm_ver"_"$gtm_arch" $gtm_ver
+else
+    ./ydbinstall --gtm --ucaseonly-utils --installdir /opt/lsb-gtm/"$gtm_ver"_"$gtm_arch" $gtm_ver
+fi
+# Remove ydbinstall script as it is unnecessary
+rm ./ydbinstall
 
-#pushd /opt/lsb-gtm/"$gtm_ver"_"$gtm_arch"
-#ld --shared -o libgtmutil.so *.o
-#popd
 
 # Link GT.M shared library where the linker can find it and refresh the cache
 if [[ $RHEL || -z $ubuntu ]]; then
     echo "/usr/local/lib" >> /etc/ld.so.conf
 fi
-ln -s /opt/lsb-gtm/"$gtm_ver"_"$gtm_arch"/libgtmshr.so /usr/local/lib
-ln -s /opt/lsb-gtm/"$gtm_ver"_"$gtm_arch"/libgtmutil.so /usr/local/lib
+
+rm -f /usr/local/lib/libgtmshr.so
+if [ "$installYottaDB" = "true" ] ; then
+    ln -s /opt/yottadb/"$gtm_ver"_"$gtm_arch"/libgtmshr.so /usr/local/lib
+else
+    ln -s /opt/lsb-gtm/"$gtm_ver"_"$gtm_arch"/libgtmshr.so /usr/local/lib
+fi
 ldconfig
-echo "Done installing GT.M"
+if [ "$installYottaDB" = "true" ] ; then
+    echo "Done installing YottaDB"
+else
+    echo "Done installing GT.M"
+fi

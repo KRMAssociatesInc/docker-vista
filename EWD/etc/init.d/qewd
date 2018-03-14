@@ -15,17 +15,17 @@
 # limitations under the License.
 #---------------------------------------------------------------------------
 
-# init script for ewdjs
+# init script for QEWD
 
 # Debian LSB info
 ### BEGIN INIT INFO
-# Provides:          foiavista-ewdjs
+# Provides:          foiavista-qewd
 # Required-Start:    $remote_fs $syslog $foiavista
 # Required-Stop:     $remote_fs $syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Start EWD.js for VistA at boot time
-# Description:       Starts/Stops EWD.js services for VistA.
+# Short-Description: Start QEWD for VistA at boot time
+# Description:       Starts/Stops QEWD services for VistA.
 ### END INIT INFO
 
 # Make sure we are root
@@ -40,26 +40,18 @@ fi
 source /home/foia/etc/env
 export PATH=$PATH:/usr/local/bin
 
-# Start EWD.js background tasks
+# Start QEWD background tasks
 start() {
-    # Start EWD.js
-    echo "Starting EWD.js"
-    su $instance -c "source $basedir/.nvm/nvm.sh && source $basedir/etc/env && nvm use $nodever && daemon --name ewdjs-${instance} -O $basedir/log/ewdjs.log -E $basedir/log/ewdjsErr.log --chdir $basedir/ewdjs node ewdStart-gtm.js OSEHRA-Config"
-    echo "Starting EWD.js Rest Server"
-    su $instance -c "source $basedir/.nvm/nvm.sh && source $basedir/etc/env && nvm use $nodever && cd $basedir/ewdjs && daemon --name ewdRest-${instance} -O $basedir/log/ewdRestOut.log -E $basedir/log/ewdRestErr.log node $basedir/ewdjs/ewdRest.js"
-    echo "Starting EWD VistA Term Server"
-    su $instance -c "source $basedir/.nvm/nvm.sh && source $basedir/etc/env && nvm use $nodever && cd $basedir/ewdjs && daemon --name ewdVistATerm-${instance} -O $basedir/log/ewdVistATermOut.log -E $basedir/log/ewdVistATermErr.log node $basedir/ewdjs/VistATerm.js"
+    # Start QEWD
+    echo "Starting QEWD"
+    su $instance -c "source $basedir/.nvm/nvm.sh && source $basedir/etc/env && nvm use $nodever && export NODE_ENV=production && daemon --name qewd-${instance} -O $basedir/log/qewd.log -E $basedir/log/qewdErr.log --chdir $basedir/qewd node qewd"
 }
 
 # Stop EWD.js background tasks
 stop() {
-    # Stop EWD.js
-    echo "Stopping EWD.js"
-    curl "https://127.0.0.1:8080/ewdjsMgr?password=keepThisSecret%21&exit=true" -k
-    echo "Stopping EWD.js Rest Server"
-    su $instance -c "source $basedir/.nvm/nvm.sh && source $basedir/etc/env && nvm use $nodever && daemon --name ewdRest-${instance} --stop"
-    echo "Stopping EWD VistA Term Server"
-    su $instance -c "source $basedir/.nvm/nvm.sh && source $basedir/etc/env && nvm use $nodever && daemon --name ewdVistATerm-${instance} --stop"
+    # Stop QEWD
+    echo "Stopping QEWD"
+    su $instance -c "source $basedir/.nvm/nvm.sh && source $basedir/etc/env && nvm use $nodever && daemon --name qewd-${instance} --stop"
 }
 
 case "$1" in

@@ -18,14 +18,56 @@
 # Add cacheusr to system to own Caché files
 # This utility requires root privliges
 
+# Make sure we are root
+if [[ $EUID -ne 0 ]]; then
+    echo "This script must be run as root" 1>&2
+    exit 1
+fi
+
+# Options
+# used http://rsalveti.wordpress.com/2007/04/03/bash-parsing-arguments-with-getopts/
+# for guidance
+
+usage()
+{
+    cat << EOF
+    usage: $0 options
+
+    This script will create the necessary users and groups for Caché
+
+    OPTIONS:
+      -h    Show this message
+      -i    Instance name
+EOF
+}
+
+while getopts ":hi:" option
+do
+    case $option in
+        h)
+            usage
+            exit 1
+            ;;
+        i)
+            instance=$(echo $OPTARG |tr '[:upper:]' '[:lower:]')
+            ;;
+    esac
+done
+
+if [[ -z $instance ]]; then
+    usage
+    exit 1
+fi
+
 # Used ideas from:
 # http://www.debian.org/doc/manuals/securing-debian-howto/ch9.en.html
 # to create daemon accounts & groups
-instance=prod
+
 SERVER_HOME=/opt/cachesys/$instance
 SERVER_USER=cacheusr$instance
-SERVER_NAME="Intersystems Cache $instance instance"
+SERVER_NAME="Intersystems Cache CACHE instance"
 SERVER_GROUP=cachegrp$instance
+
 # create user to avoid running server as root
 # create group if not existing
 if ! getent group | grep -q "^$SERVER_GROUP:" ; then

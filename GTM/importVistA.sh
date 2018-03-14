@@ -17,10 +17,17 @@
 
 # Import VistA Globals and Routines into GT.M
 
+
 # Ensure presence of required variables
 if [[ -z $instance && $gtmver && $gtm_dist ]]; then
     echo "The required variables are not set (instance, gtmver, gtm_dist)"
 fi
+
+# number of cores - 1
+# (works also on MacOS; on FreeBSD, omit underscore)
+cores=$(($(getconf _NPROCESSORS_ONLN) - 1))
+
+if (( cores < 1 )); then cores=1; fi
 
 # Import routines
 echo "Copying routines"
@@ -38,24 +45,14 @@ fi
 echo "Done copying routines"
 
 # Compile routines
-echo "Compiling routines"
+echo "Compiling routines using $cores cores"
 cd $basedir/r/$gtmver
-for routine in $basedir/r/*.m; do
-    mumps ${routine} >> $basedir/log/compile.log 2>&1
-done
+find .. -name '*.m' | xargs --max-procs=$cores --max-args=1 $gtm_dist/mumps >> $basedir/log/compile.log 2>&1
 echo "Done compiling routines"
 
 # Import globals
-echo "Importing globals"
-if [ -d /usr/local/src/VistA-Source/.git ]; then
-    for global in $(cd /usr/local/src/VistA-Source && git ls-files -- \*.zwr); do
-        mupip load \"/usr/local/src/VistA-Source/${global}\" >> $basedir/log/loadGloabls.log 2>&1
-        done
-else
-    for global in $(cd /usr/local/src/VistA-Source && find . -iname \*.zwr); do
-        mupip load \"/usr/local/src/VistA-Source/${global}\" >> $basedir/log/loadGloabls.log 2>&1
-        done
-fi
+echo "Importing globals using $cores cores"
+find /usr/local/src/VistA-Source -name '*.zwr' -print0 | xargs -0 -I{} -n 1 -P $cores $gtm_dist/mupip load \"{}\" >> $basedir/log/loadGloabls.log 2>&1
 
 echo "Done importing globals"
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #---------------------------------------------------------------------------
-# Copyright 2011-2013 The Open Source Electronic Health Record Agent
+# Copyright 2011-2017 The Open Source Electronic Health Record Agent
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,10 +15,23 @@
 # limitations under the License.
 #---------------------------------------------------------------------------
 
+# Turn this flag on for debugging.
+#set -x;
+
 # Make sure we are root
 if [[ $EUID -ne 0 ]]; then
     echo "This script must be run as root" 1>&2
     exit 1
+fi
+
+# Are we running on a local repo? If so, don't clone the "VistA" repo again!
+currentDir=$(dirname "$(readlink -f "$0")")
+parentDir=$(dirname $currentDir)
+parentdirname=$(basename $parentDir)
+if [ "$parentdirname" = "Install" ]; then
+    localVistARepo="true"
+else
+    localVistARepo="false"
 fi
 
 # Options
@@ -47,18 +60,26 @@ usage()
       -a    Alternate VistA-M repo (zip or git format) (Must be in OSEHRA format)
       -r    Alternate VistA-M repo branch (git format only)
       -b    Skip bootstrapping system (used for docker)
-      -c    Path to Caché installer
-      -d    Create development directories (s & p) (GT.M only)
-      -e    Install EWD.js (assumes development directories)
+      -c    Use Caché
+      -d    Create development directories (s & p) (GT.M and YottaDB only)
+      -e    Install QEWD (assumes development directories)
+      -m    Install Panorama (assumes development directories and QEWD)
       -g    Use GT.M
-      -i    Instance name
+      -i    Instance name (Namespace/Database for Caché)
       -p    Post install hook (path to script)
       -s    Skip testing
+      -w    Install RPMS XINETD scripts
+      -y    Use YottaDB
+
+    NOTE:
+    The Caché install only supports using .DAT files for the VistA DB, and
+    installs using minimal security. Most other options are not valid for
+    Caché installation including EWD, Panorama, and development directories.
 
 EOF
 }
 
-while getopts ":ha:c:bedgi:p:sr:" option
+while getopts ":ha:cbemdgi:p:sr:wy" option
 do
     case $option in
         h)
@@ -72,7 +93,7 @@ do
             bootstrap=false
             ;;
         c)
-            cacheinstallerpath=$OPTARG
+            installcache=true
             ;;
         d)
             developmentDirectories=true
@@ -80,6 +101,11 @@ do
         e)
             installEWD=true
             developmentDirectories=true
+            ;;
+        m)
+            installEWD=true
+            developmentDirectories=true
+            installPanorama=true
             ;;
         g)
             installgtm=true
@@ -96,6 +122,12 @@ do
             ;;
         s)
             skipTests=true
+            ;;
+        w)
+            installRPMS=true
+            ;;
+        y)
+            installYottaDB=true
             ;;
     esac
 done
@@ -117,6 +149,10 @@ if [[ -z $installEWD ]]; then
     installEWD=false
 fi
 
+if [[ -z $installPanorama ]]; then
+    installPanorama=false
+fi
+
 if [[ -z $installgtm ]]; then
     installgtm=false
 fi
@@ -133,13 +169,21 @@ if [ -z $skipTests ]; then
     skipTests=false
 fi
 
-if [ -z $cacheinstallerpath ]; then
-    cacheinstallerpath=false;
+if [ -z $installYottaDB ]; then
+    installYottaDB=false
+fi
+
+if [ -z $installcache ]; then
+    installcache=false;
+fi
+
+if [ -z $installRPMS ]; then
+    installRPMS=false;
 fi
 
 # Quit if no M environment viable
-if [[ ! $installgtm || ! $cacheinstallerpath ]]; then
-    echo "You need to either provide a path to the Caché installer or install GT.M!"
+if [[ ! $installgtm || ! $installcache || ! $installYottaDB ]]; then
+    echo "You need to either install Caché, GT.M or YottaDB!"
     exit 1
 fi
 
@@ -147,10 +191,16 @@ fi
 echo "Using $repoPath for routines and globals"
 echo "Create development directories: $developmentDirectories"
 echo "Installing an instance named: $instance"
-echo "Installing EWD.js: $installEWD"
-echo "Post install hook: $postInstall"
+echo "Installing QEWD: $installEWD"
+echo "Installing Panorama: $installPanorama"
+echo "Post install hook: $postInstallScript"
 echo "Skip Testing: $skipTests"
 echo "Skip bootstrap: $bootstrap"
+echo "Use Cache: $installcache"
+echo "Use GT.M: $installgtm"
+echo "Use YottaDB: $installYottaDB"
+echo "Install RPMS scripts: $installRPMS"
+echo "Running on local repo: $localVistARepo"
 
 # Get primary username if using sudo, default to $username if not sudo'd
 if $bootstrap; then
@@ -172,34 +222,18 @@ echo This script will add $primaryuser to the VistA group
 test -d /home/$instance/g &&
 { echo "VistA already Installed. Aborting."; exit 0; }
 
-# Install the epel repo (needed for cmake28)
-if $bootstrap; then
-    cat > /etc/yum.repos.d/epel.repo << EOF
-    [epel]
-    name=epel
-    baseurl=http://download.fedoraproject.org/pub/epel/6/\$basearch
-    enabled=1
-    gpgcheck=0
-EOF
-fi
-
 # extra utils - used for cmake and dashboards and initial clones
 if $bootstrap; then
     echo "Updating operating system"
     yum update -y > /dev/null
-    yum install -y cmake28 git dos2unix > /dev/null
+    yum install -y cmake unzip git dos2unix > /dev/null
     yum install -y http://libslack.org/daemon/download/daemon-0.6.4-1.i686.rpm > /dev/null
-
-    # Fix cmake28 links
-    ln -s /usr/bin/cmake28 /usr/bin/cmake
-    ln -s /usr/bin/ctest28 /usr/bin/ctest
-    ln -s /usr/bin/ccmake28 /usr/bin/ccmake
-    ln -s /usr/bin/cpack28 /usr/bin/cpack
 fi
 
-# Clone repos
+# Clone repos - Dashboard
 if ! $skipTests; then
     cd /usr/local/src
+    rm -rf VistA-Dashboard
     git clone -q https://github.com/OSEHRA/VistA -b dashboard VistA-Dashboard
 fi
 
@@ -216,8 +250,12 @@ if [ -d /vagrant ]; then
     dos2unix /vagrant/GTM/gtminstall_SHA1 > /dev/null 2>&1
 else
     if $bootstrap; then
-        git clone -q https://github.com/OSEHRA/VistA
-        scriptdir=/usr/local/src/VistA/Scripts/Install
+        if $localVistARepo; then
+           scriptdir=$parentDir
+        else
+           git clone -q https://github.com/OSEHRA/VistA
+           scriptdir=/usr/local/src/VistA/Scripts/Install
+        fi
     else
         scriptdir=/opt/vista
     fi
@@ -235,52 +273,65 @@ fi
 # Ensure scripts know if we are RHEL like or Ubuntu like
 export RHEL=true;
 
-# Install GT.M if requested
-if $installgtm; then
-    cd GTM
-    if $bootstrap; then
-        ./install.sh
-    else
-        ./install.sh -s
-    fi
-    # Create the VistA instance
-    if $bootstrap; then
-        ./createVistaInstance.sh -i $instance
-    else
-        ./createVistaInstance.sh -i $instance -f
-    fi
+# Install GT.M or YottaDB
+installydbOptions=""
+createVistaInstanceOptions=""
+if ! $bootstrap; then
+   installydbOptions+="-s "
+   createVistaInstanceOptions+="-f "
+fi
+if $installYottaDB; then
+   installydbOptions+="-y "
+   createVistaInstanceOptions+="-y "
+fi
+if $installRPMS; then
+   createVistaInstanceOptions+="-r "
 fi
 
-# Install Caché if requested
-if $cacheinstallerpath; then
-    echo "Cache installer path:" $cacheinstallerpath
+if $installgtm || $installYottaDB ; then
+    cd GTM
+    ./install.sh $installydbOptions
+    ./createVistaInstance.sh -i $instance $createVistaInstanceOptions
+fi
+
+if $installcache; then
+    cd Cache
+    ./install.sh -i $instance
+    # Create the VistA instance
+    #./createVistaInstance.sh
 fi
 
 # Modify the primary user to be able to use the VistA instance
-usermod -a -G $instance $primaryuser
-chmod g+x /home/$instance
+if $installgtm || $installYottaDB; then
+    usermod -a -G $instance $primaryuser
+    chmod g+x /home/$instance
+fi
 
 # Setup environment variables so the dashboard can build
 # have to assume $basedir since this sourcing of this script will provide it in
 # future commands
-source /home/$instance/etc/env
+if $installgtm || $installYottaDB; then
+    source /home/$instance/etc/env
+fi
 
 # Get running user's home directory
 # http://stackoverflow.com/questions/7358611/bash-get-users-home-directory-when-they-run-a-script-as-root
-if $bootstrap; then
+if $bootstrap && ($installgtm || $installYottaDB); then
     USER_HOME=$(getent passwd $SUDO_USER | cut -d: -f6)
 else
     USER_HOME=/root
 fi
 
 # source env script during running user's login
-echo "source $basedir/etc/env" >> $USER_HOME/.bashrc
+if $installgtm || $installYottaDB; then
+    echo "source $basedir/etc/env" >> $USER_HOME/.bashrc
+fi
 
 # Build a dashboard and run the tests to verify installation
 # These use the Dashboard branch of the VistA repository
 # The dashboard will clone VistA and VistA-M repos
 # run this as the $instance user
-if $skipTests; then
+if $skipTests && ($installgtm || $installYottaDB); then
     # Clone VistA-M repo
     cd /usr/local/src
     if [[ $repoPath == *.git ]]; then
@@ -290,6 +341,7 @@ if $skipTests; then
             git clone --depth 1 $repoPath VistA-Source
         fi
     else
+        echo "Downloading "$repoPath
         curl -fsSL --progress-bar $repoPath -o VistA-M-master.zip
         unzip -q VistA-M-master.zip
         rm VistA-M-master.zip
@@ -303,16 +355,24 @@ if $skipTests; then
     # Perform the import
     su $instance -c "source $basedir/etc/env && $scriptdir/GTM/importVistA.sh"
 
-    # Run ZTMGRSET accepting the defaults
-    su $instance -c "mumps -run %XCMD 'D ^ZTMGRSET' << EOF
-8
+    # Get GT.M Optimized Routines from Kernel-GTM project and unzip
+    curl -fsSLO --progress-bar https://github.com/shabiel/Kernel-GTM/releases/download/XU-8.0-10001/virgin_install.zip
 
+    # Unzip file, put routines, delete old objects
+    su $instance -c "unzip -qo virgin_install.zip -d $basedir/r/"
+    su $instance -c "unzip -l virgin_install.zip | awk '{print \$4}' | grep '\.m' | sed 's/.m/.o/' | xargs -i rm -fv r/$gtmver/{}"
+    su $instance -c "rm -fv r/$gtmver/_*.o"
 
+    # Get the Auto-configurer for VistA/RPMS and run
+    curl -fsSLO https://raw.githubusercontent.com/shabiel/random-vista-utilities/master/KBANTCLN.m
+    su $instance -c "mv KBANTCLN.m $basedir/r/"
 
+    # Run the auto-configurer accepting the defaults
+    su $instance -c "source $basedir/etc/env && mumps -run START^KBANTCLN"
 
-Y
-EOF"
-else
+    # Start Taskman
+    su $instance -c "source $basedir/etc/env && cd ~/tmp/ && mumps -run ^ZTMB"
+elif $installgtm || $installYottaDB; then
     # Attempt to bypass huge git clone by getting the zip files and unzipping them where they go
     su $instance -c "source $basedir/etc/env && mkdir -p $basedir/Dashboard"
     cd $basedir/Dashboard
@@ -346,35 +406,47 @@ else
 fi
 
 # Enable journaling
-su $instance -c "source $basedir/etc/env && $basedir/bin/enableJournal.sh"
+if $installgtm || $installYottaDB; then
+    su $instance -c "source $basedir/etc/env && $basedir/bin/enableJournal.sh"
+fi
 
 # if we are running on docker we must shutdown gracefully or else corruption will occur
 # there is also no need to restart xinetd if we are running in docker as we are going to
 # shut it down
-if $bootstrap; then
+if $bootstrap && ($installgtm || $installYottaDB); then
     # Restart xinetd
     service xinetd restart
-else
+elif ($installgtm || $installYottaDB); then
     service ${instance}vista stop
 fi
 
 # Add p and s directories to gtmroutines environment variable
-if $developmentDirectories; then
+if $developmentDirectories && ($installgtm || $installYottaDB); then
     su $instance -c "mkdir $basedir/{p,p/$gtmver,s,s/$gtmver}"
     perl -pi -e 's#export gtmroutines=\"#export gtmroutines=\"\$basedir/p/\$gtmver\(\$basedir/p\) \$basedir/s/\$gtmver\(\$basedir/s\) #' $basedir/etc/env
 fi
 
-# Install EWD.js
-if $installEWD; then
+# Install QEWD
+if $installEWD && ($installgtm || $installYottaDB); then
     cd $scriptdir/EWD
-    ./ewdjs.sh
+    ./ewdjs.sh -f
+    cd $basedir
+fi
+
+# Install Panorama
+if $installPanorama && ($installgtm || $installYottaDB); then
+    cd $scriptdir/EWD
+    ./panorama.sh -f
     cd $basedir
 fi
 
 # Post install hook
 if $postInstall; then
-    su $instance -c "source $basedir/etc/env && $postInstallScript"
+    su $instance -c "source $basedir/etc/env && pushd $scriptdir && $postInstallScript && popd"
 fi
 
 # Ensure group permissions are correct
-chmod -R g+rw /home/$instance
+if $installgtm || $installYottaDB; then
+    echo "Please wait while I fix the group permissions on the files..."
+    chmod -R g+rw /home/$instance
+fi
