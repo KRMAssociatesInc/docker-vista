@@ -55,16 +55,6 @@ EXPOSE 22 8001 9430 8080
 # EXPOSE 22 9100 9101 9430
 
 # Caché Install with local DAT file
-#RUN dos2unix /opt/vista/* && \
-#    dos2unix /opt/vista/Cache/* && \
-#    dos2unix /opt/vista/Cache/etc/init.d/* && \
-#    dos2unix /opt/vista/Common/* && \
-#    dos2unix /opt/vista/Dashboard/* && \
-#    dos2unix /opt/vista/EWD/* && \
-#    dos2unix /opt/vista/EWD/etc/init.d/* && \
-#    dos2unix /opt/vista/GTM/* && \
-#    dos2unix /opt/vista/GTM/bin/* && \
-#    dos2unix /opt/vista/GTM/etc/init.d/*
-#RUN ./autoInstaller.sh -c -b -s -i vehu
-#ENTRYPOINT /opt/cachesys/vehu/bin/start.sh
-#EXPOSE 22 8001 9430 8080 57772
+RUN ./autoInstaller.sh -c -b -s -i vehu
+ENTRYPOINT /opt/cachesys/vehu/bin/start.sh
+EXPOSE 22 8001 9430 8080 57772
