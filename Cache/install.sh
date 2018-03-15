@@ -113,18 +113,18 @@ fi
 
 popd
 if [ -e /opt/vista/cache.key ]; then
-    cp /opt/vista/cache.key $basedir/mgr
+    cp -v /opt/vista/cache.key $basedir/mgr
 fi
 
 # Perform subsitutions in cpf file and copy to destination
-cp $scriptdir/cache.cpf $basedir/cache.cpf-new
+cp -v $scriptdir/cache.cpf $basedir/cache.cpf-new
 perl -pi -e 's/foia/'$instance'/g' $basedir/cache.cpf-new
 perl -pi -e 's/FOIA/'${instance^^}'/g' $basedir/cache.cpf-new
 
 # Move CACHE.dat
 mkdir -p $basedir/vista
 if [ -e /opt/vista/CACHE.DAT ]; then
-    mv /opt/vista/CACHE.DAT $basedir/vista/CACHE.DAT
+    mv -v /opt/vista/CACHE.DAT $basedir/vista/CACHE.DAT
     chown root:cachegrp$instance $basedir/vista/CACHE.DAT
     chmod ug+rw $basedir/vista/CACHE.DAT
     chmod ug+rw $basedir/vista
