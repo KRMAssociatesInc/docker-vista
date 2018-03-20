@@ -55,6 +55,6 @@ EXPOSE 22 8001 9430 8080
 # EXPOSE 22 9100 9101 9430
 
 # Caché Install with local DAT file
-RUN ./autoInstaller.sh -c -b -s -i pla
+RUN ./autoInstaller.sh -c -b -s -i pla -p ./Common/pvPostInstall.sh
 ENTRYPOINT /opt/cachesys/pla/bin/start.sh
 EXPOSE 22 8001 9430 8080 57772
