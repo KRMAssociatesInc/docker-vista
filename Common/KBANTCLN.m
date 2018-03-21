@@ -1,4 +1,4 @@
-KBANTCLN ; VEN/SMH - Clean Taskman Environment ;2018-03-20  3:11 PM
+KBANTCLN ; VEN/SMH - Clean Taskman Environment ;2018-03-21  10:57 AM
  ;;nopackage;0.2
  ; License: Public Domain
  ; Author not responsible for use of this routine.
@@ -383,6 +383,7 @@ SOFTCLN ; [Private] Soft clean tasks -- don't delete them as in a brand new syst
  K ^%ZTSCH("SUB")
  N X,Y
  S X=0 F  S X=$O(^%ZTSK(X)) Q:'X  D
+ . I '$D(^%ZTSK(X,0)) QUIT
  . N Y S Y=^%ZTSK(X,0)
  . S $P(Y,"^",4)=UCI
  . S $P(Y,"^",11)=UCI
