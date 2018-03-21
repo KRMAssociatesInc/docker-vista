@@ -442,7 +442,13 @@ fi
 
 # Post install hook
 if $postInstall; then
+  if $installgtm || $installYottaDB; then
     su $instance -c "source $basedir/etc/env && pushd $scriptdir && $postInstallScript && popd"
+  elif $installcache; then
+    pushd $scriptdir
+    $postInstallScript $instance
+    popd
+  fi
 fi
 
 # Ensure group permissions are correct

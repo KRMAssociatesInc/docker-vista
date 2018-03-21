@@ -44,22 +44,12 @@ ADD . /opt/vista/
 
 # RPMS (RPMS, YottaDB, no boostrap, skip testing, and do post-install as well)
 # RPMS does not have a GTM VL Entry Point. Removing 8001 for now.
-RUN ./autoInstaller.sh -w -y -b -s -i rpms -a https://github.com/shabiel/FOIA-RPMS/archive/master.zip -p ./Common/rpmsPostInstall.sh && \
-	rm -rf /usr/local/src/VistA-Source
-ENTRYPOINT /home/rpms/bin/start.sh
-EXPOSE 22 9100 9101 9430
+# RUN ./autoInstaller.sh -w -y -b -s -i rpms -a https://github.com/shabiel/FOIA-RPMS/archive/master.zip -p ./Common/rpmsPostInstall.sh && \
+# 	rm -rf /usr/local/src/VistA-Source
+# ENTRYPOINT /home/rpms/bin/start.sh
+# EXPOSE 22 9100 9101 9430
 
 # Caché Install with local DAT file
-#RUN dos2unix /opt/vista/* && \
-#    dos2unix /opt/vista/Cache/* && \
-#    dos2unix /opt/vista/Cache/etc/init.d/* && \
-#    dos2unix /opt/vista/Common/* && \
-#    dos2unix /opt/vista/Dashboard/* && \
-#    dos2unix /opt/vista/EWD/* && \
-#    dos2unix /opt/vista/EWD/etc/init.d/* && \
-#    dos2unix /opt/vista/GTM/* && \
-#    dos2unix /opt/vista/GTM/bin/* && \
-#    dos2unix /opt/vista/GTM/etc/init.d/*
-#RUN ./autoInstaller.sh -c -b -s -i vehu
-#ENTRYPOINT /opt/cachesys/vehu/bin/start.sh
-#EXPOSE 22 8001 9430 8080 57772
+RUN ./autoInstaller.sh -c -b -s -i pla -p ./Common/pvPostInstall.sh
+ENTRYPOINT /opt/cachesys/pla/bin/start.sh
+EXPOSE 22 8001 9430 8080 57772
