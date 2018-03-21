@@ -6,8 +6,8 @@ ccontrol start CACHE
 csession CACHE -U $instance <<END
 ; Save pvPostInstall Routine
 W "Saving pvPostInstall...",!
-ZR  ZS pvPostInstall
 d \$SYSTEM.Process.SetZEOF(1)
+ZR  ZS pvPostInstall
 S F="/opt/vista/Common/pvPostInstall.m"
 O F U F ZL  ZS pvPostInstall C F
 W "Running pvPostInstall...",!
@@ -15,6 +15,7 @@ D ^pvPostInstall
 ;
 ; KBANTCLN
 S F="/opt/vista/Common/KBANTCLN.m"
+ZR  ZS KBANTCLN
 O F U F ZL  ZS KBANTCLN C F
 W "Cleaning Taskman...",!
 S U="^"
