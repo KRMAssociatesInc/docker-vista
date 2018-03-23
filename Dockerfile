@@ -24,6 +24,11 @@ ADD . /opt/vista/
 #ENTRYPOINT /home/osehra/bin/start.sh
 #EXPOSE 22 8001 9430 8080
 
+# OSEHRA VistA (Cache, no bootstrap, and skip testsing)
+RUN ./autoInstaller.sh -c -b -s -i osehra
+ENTRYPOINT /opt/cachesys/osehra/bin/start.sh
+EXPOSE 22 8001 9430 8080
+
 # WorldVistA (GTM, no boostrap, skip testing)
 #RUN ./autoInstaller.sh -g -b -s -i worldvista -a https://github.com/glilly/wvehr2-dewdrop/archive/master.zip && \
 #	rm -rf /usr/local/src/VistA-Source
@@ -44,10 +49,10 @@ ADD . /opt/vista/
 
 # RPMS (RPMS, YottaDB, no boostrap, skip testing, and do post-install as well)
 # RPMS does not have a GTM VL Entry Point. Removing 8001 for now.
-RUN ./autoInstaller.sh -w -y -b -s -i rpms -a https://github.com/shabiel/FOIA-RPMS/archive/master.zip -p ./Common/rpmsPostInstall.sh && \
-	rm -rf /usr/local/src/VistA-Source
-ENTRYPOINT /home/rpms/bin/start.sh
-EXPOSE 22 9100 9101 9430
+# RUN ./autoInstaller.sh -w -y -b -s -i rpms -a https://github.com/shabiel/FOIA-RPMS/archive/master.zip -p ./Common/rpmsPostInstall.sh && \
+# 	rm -rf /usr/local/src/VistA-Source
+# ENTRYPOINT /home/rpms/bin/start.sh
+# EXPOSE 22 9100 9101 9430
 
 # Caché Install with local DAT file
 #RUN dos2unix /opt/vista/* && \
