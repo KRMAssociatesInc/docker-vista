@@ -123,6 +123,7 @@ fi
 cp $scriptdir/cache.cpf $basedir/cache.cpf-new
 perl -pi -e 's/foia/'$instance'/g' $basedir/cache.cpf-new
 perl -pi -e 's/FOIA/'${instance^^}'/g' $basedir/cache.cpf-new
+perl -pi -e 's/vehu/'${instance^^}'/g' $basedir/cache.cpf-new
 cp $basedir/cache.cpf-new $basedir/cache.cpf
 
 # Move CACHE.dat
