@@ -24,11 +24,6 @@ ADD . /opt/vista/
 #ENTRYPOINT /home/osehra/bin/start.sh
 #EXPOSE 22 8001 9430 8080
 
-# OSEHRA VistA (Cache, no bootstrap, and skip testsing)
-RUN ./autoInstaller.sh -c -b -s -i osehra
-ENTRYPOINT /opt/cachesys/osehra/bin/start.sh
-EXPOSE 22 8001 9430 8080
-
 # WorldVistA (GTM, no boostrap, skip testing)
 #RUN ./autoInstaller.sh -g -b -s -i worldvista -a https://github.com/glilly/wvehr2-dewdrop/archive/master.zip && \
 #	rm -rf /usr/local/src/VistA-Source
