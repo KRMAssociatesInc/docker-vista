@@ -47,9 +47,9 @@ SystemName=
 VirtualAddressInterface=
 
 [Journal]
-AlternateDirectory=/opt/cachesys/vehu/mgr/journal/
+AlternateDirectory=/opt/cachesys/foia/mgr/journal/
 BackupsBeforePurge=2
-CurrentDirectory=/opt/cachesys/vehu/mgr/journal/
+CurrentDirectory=/opt/cachesys/foia/mgr/journal/
 DaysBeforePurge=2
 FileSizeLimit=1024
 FreezeOnError=0
