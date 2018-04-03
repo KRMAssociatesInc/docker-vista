@@ -44,7 +44,7 @@ usage()
     cat << EOF
     usage: $0 options
 
-    This script will automatically create a VistA instance for GT.M on
+    This script will automatically create a VistA instance on
     RHEL-like Distros
 
     DEFAULTS:
